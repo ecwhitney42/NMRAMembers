@@ -11,11 +11,17 @@ NMRAMembers Python Installation Notes
 Install Python 3.7.6 using the installer
 
 pip3 install —upgrade pip
+
 pip3 install xlrd
+
 pip3 install xlwt
+
 pip3 install pyexcel
+
 pip3 install pyexcel_xlsx
+
 pip3 install pyinstaller
+
 
 For the Mac, there is an Apple Automator app that can be used do drag and drop the .zip file onto which executes the script.
 
