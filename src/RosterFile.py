@@ -24,7 +24,7 @@ import sys
 import pyexcel
 import pyexcel_xlsx
 import MemberInfo
-import EmailDistribution
+import DivisionMap
 import xlrd
 import xlwt
 import os
@@ -243,7 +243,7 @@ class RosterFile:
 	#
 	# Processes the current workbook in memory
 	#
-	def process(self, distribution):
+	def process(self, distribution, parent_dir, dist_dir, zip_filename, force_override):
 		#
 		# Iterate through the rows of each roster worksheet and split into new division and region workbooks
 		#
@@ -341,7 +341,8 @@ class RosterFile:
 			# update the division and region entries
 			#
 			self.write_member(a_id, row, r_division, reg_fid, div_fid)
-			distribution.validate_recipient(a_id, r_region, r_division, r_lname, r_fname, a_email)
+			distribution.validate_recipient(self.use_long, self.nmra_map, parent_dir, dist_dir, zip_filename, a_id, r_region, r_division, r_lname, r_fname, a_email, force_override)
+			
 		pass
 		#
 		# at the end of the input sheet, write out all of the output sheets we made

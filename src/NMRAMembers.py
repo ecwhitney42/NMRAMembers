@@ -178,10 +178,11 @@ def main():
 	default_reassignment_file=['./config/NMRA_Division_Reassignments.xlsx']
 	default_map_file=['./config/NMRA_Region_Division_Map.xlsx']
 	default_email_file=['./config/NMRA_Email_Distribution_List.xlsx']
-	default_work_dir=['./work']
-	default_dist_dir=['./release']
+	default_work_dir=['work']
+	default_dist_dir=['release']
 	default_distribute=False
 	default_long=False
+	default_override_email=False
 
 	parser = argparse.ArgumentParser(
 		description='This program processes the NMRA roster files from the NMRA .zip file and outputs a directory with the roster .zip files for each division and region found with the members reassigned to their desired divsions as specified in the division reassignment file (-r option)\nSince the NMRA roster files use numerical identifiers for each region and division, this script uses a mapping file (-m option)'
@@ -246,6 +247,13 @@ def main():
 		required=False,
 		help="Send out the emails according to the distribution list (default: %s)" % (default_distribute)
 		)
+	parser.add_argument(
+		'-f', '--force_override_email',
+		action="store_true",
+		default=default_override_email,
+		required=False,
+		help="Force the override of the email address in the config file in place of the NMRA email address (default: %s)" % (default_override_email)
+		)
 #------------------------------------------------------------------------------
 #
 # Start
@@ -272,11 +280,12 @@ def main():
 	unzip_dir = "%s/%s" % (myargs.work_dir[0], zip_name)
 	email_file = myargs.email_file[0]
 	send_email = myargs.send_email
+	force_override = myargs.force_override_email
 	#
 	# process map file
 	#
-	div_map = DivisionMap.DivisionMap()
-	div_map.read_file(map_file)
+	nmra_map = DivisionMap.DivisionMap()
+	nmra_map.read_file(map_file)
 	#
 	# process reassignment file
 	#
@@ -297,25 +306,25 @@ def main():
 	#
 	print("\nExpanding the NMRA ZIP file...")
 	expand_zip_file(zip_file, work_dir)
-	zip_filename = os.path.splitext(os.path.basename(zip_file))
+	(zip_filename, zip_ext) = os.path.splitext(os.path.basename(zip_file))
 	roster_file_dir = "%s/%s" % (work_dir, zip_name)
 	
 	#
 	# Create the division and region lists
 	#
+	parent_dir = os.getcwd()
 	print("\nProcessing Roster Files...")
 	print("NOTE: Warnings about OLE2 and file sizes are expected--these are caused by the really old version of Excel these NMRA files are saved in...")
 	roster_files = glob.glob("%s/*.xls" % (roster_file_dir))
 	for roster_file in roster_files:
 		print("\tProcessing NMRA Roster file: %s" % roster_file)
-		rf = RosterFile.RosterFile(unzip_dir, div_map, use_long, reassignments)
+		rf = RosterFile.RosterFile(unzip_dir, nmra_map, use_long, reassignments)
 		rf.read_file(roster_file)
-		rf.process(email_distribution)
+		rf.process(email_distribution, parent_dir, dist_dir, zip_filename, force_override)
 	pass
 	#
 	# Zip up the output directories
 	#
-	parent_dir = os.getcwd()
 	os.chdir(work_dir)
 	print("\nCreating all of the Region and Divsion ZIP files in: %s" % (dist_dir))
 	output_files = glob.glob("%s/*" % zip_name)
@@ -329,13 +338,18 @@ def main():
 		pass
 	pass
 	#
+	# Zip up all of the files
+	#
+	full_zip_file_name = "%s/%s/%s_processed.zip" % (parent_dir, myargs.dist_dir[0], zip_filename)
+	print("\nCreating a complete zip file of %s in: %s" % (zip_name, full_zip_file_name))
+	zip_directory(full_zip_file_name, zip_name)
+	#
 	# Email the zip files to the distribution list
 	#
 	os.chdir(parent_dir)
 	if (send_email):
 		print("Sending emails to the distribution list...")
-		dist_path = "%s/%s" % (parent_dir, dist_dir)
-		email_distribution.send_emails(zip_name, dist_path, myargs.nmra_zip_file[0])
+		email_distribution.send_emails(zip_filename)
 	else:
 		print("Skipping email distribution")
 	pass
