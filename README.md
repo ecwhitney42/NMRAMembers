@@ -62,35 +62,35 @@ cd installation_directory
 ```
 
 **Help Output:**
-NMRA Roster ZIP File Processing Program
-by Erich Whitney
-Copyright (c) 2019, 2020 HomeBrew Engineering
-Version v0.5
 
-usage: NMRAMembers [-h] [-r reassign] [-m, map_file] [-e, email_file] [-w work_dir] [-d dist_dir] [-l] [-s] [-f] nmra_zip_file
-
-This program processes the NMRA roster files from the NMRA .zip file and outputs a directory with the roster .zip files for each division and region found with the members reassigned to their desired divsions as specified in the division reassignment file (-r option) Since the NMRA roster files use numerical identifiers for each region and division, this script uses a mapping file (-m option)
-
-positional arguments:
-  nmra_zip_file         The NMRA ZIP file containing the monthly roster to be processed
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -r reassign, --reassign reassign
-                        Filename of the .xlsx reassignment file (default: ['./config/NMRA_Division_Reassignments.xlsx'])
-  -m, map_file, --map_file map_file
-                        Filename of the .xlsx division map file (default: ['./config/NMRA_Region_Division_Map.xlsx'])
-  -e, email_file, --email_file email_file
-                        Filename of the .xlsx email distribution file (default: ['./config/NMRA_Email_Distribution_List.xlsx'])
-  -w work_dir, --work_dir work_dir
-                        Name of the work directory (default: ['work'])
-  -d dist_dir, --dist_dir dist_dir
-                        Name of the directory where all of the final output files go (default: ['release'])
-  -l, --long_dir_names  Use full-length names for the region/division
-                        directories instead of a shorter version (default: False)
-  -s, --send_email      Send out the emails according to the distribution list (default: False)
-  -f, --force_override_email
-                        Force the override of the email address in the config file in place of the NMRA email address (default: False)
+NMRA Roster ZIP File Processing Program  
+by Erich Whitney  
+Copyright (c) 2019, 2020 HomeBrew Engineering  
+Version v0.5  
+  
+usage: NMRAMembers [-h] [-r reassign] [-m, map_file] [-e, email_file] [-w work_dir] [-d dist_dir] [-l] [-s] [-f] nmra_zip_file  
+  
+This program processes the NMRA roster files from the NMRA .zip file and outputs a directory with the roster .zip files for each division and region found with the members reassigned to their desired divsions as specified in the division reassignment file (-r option) Since the NMRA roster files use numerical identifiers for each region and division, this script uses a mapping file (-m option)  
+  
+positional arguments:  
+  nmra_zip_file         The NMRA ZIP file containing the monthly roster to be processed  
+  
+optional arguments:  
+  -h, --help            show this help message and exit  
+  -r reassign, --reassign reassign  
+                        Filename of the .xlsx reassignment file (default: ['./config/NMRA_Division_Reassignments.xlsx'])  
+  -m, map_file, --map_file map_file  
+                        Filename of the .xlsx division map file (default: ['./config/NMRA_Region_Division_Map.xlsx'])  
+  -e, email_file, --email_file email_file  
+                        Filename of the .xlsx email distribution file (default: ['./config/NMRA_Email_Distribution_List.xlsx'])  
+  -w work_dir, --work_dir work_dir  
+                        Name of the work directory (default: ['work'])  
+  -d dist_dir, --dist_dir dist_dir  
+                        Name of the directory where all of the final output files go (default: ['release'])  
+  -l, --long_dir_names  Use full-length names for the region/division directories instead of a shorter version (default: False)  
+  -s, --send_email      Send out the emails according to the distribution list (default: False)  
+  -f, --force_override_email  
+                        Force the override of the email address in the config file in place of the NMRA email address (default: False)  
 
 ## Documentation
 The nmra_zip_file is the .zip file that is sent to the region each month which contains the current membership roster information. NMRAMembers will unzip this file and process the contents.
@@ -118,4 +118,4 @@ The configuration file provides the following options for the 'file' specificati
 1) DIVISION: specifies that the recipient should receive their division membership roster .zip file.
 2) REGION: specifies that the recipient should receive their region membershiop roster .zip file.
 3) NMRA: specifies that the recipient should receive the processed version of the entire NMRA roster .zip file provided.
-4) filename.zip: specifies that the recipient should recieve the specified filename.zip from the release directoryn.
+4) filename.zip: specifies that the recipient should recieve the specified filename.zip from the release directory.
