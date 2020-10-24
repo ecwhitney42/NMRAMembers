@@ -73,10 +73,11 @@ usage: NMRAMembers [-h] [-r reassign] [-m, map_file] [-e, email_file] [-w work_d
 This program processes the NMRA roster files from the NMRA .zip file and outputs a directory with the roster .zip files for each division and region found with the members reassigned to their desired divsions as specified in the division reassignment file (-r option) Since the NMRA roster files use numerical identifiers for each region and division, this script uses a mapping file (-m option)  <br />
   <br />
 positional arguments:  <br />
-&nbsp;&nbsp;nmra_zip_file&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The NMRA ZIP file containing the monthly roster to be processed  <br />
+&nbsp;&nbsp;nmra_zip_file&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The NMRA ZIP file containing the monthly roster to be processed  <br />
   <br />
 optional arguments:  <br />
-&nbsp;&nbsp;-h, --help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;show this help message and exit  <br />
+&nbsp;&nbsp;-h, --help <br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Show this help message and exit <br />
 &nbsp;&nbsp;-r reassign, --reassign reassign  <br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Filename of the .xlsx reassignment file (default: ['./config/NMRA_Division_Reassignments.xlsx'])  <br />
 &nbsp;&nbsp;-m, map_file, --map_file map_file  <br />
@@ -87,8 +88,10 @@ optional arguments:  <br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Name of the work directory (default: ['work'])  <br />
 &nbsp;&nbsp;-d dist_dir, --dist_dir dist_dir  <br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Name of the directory where all of the final output files go (default: ['release'])  <br />
-&nbsp;&nbsp;-l, --long_dir_names&nbsp;Use full-length names for the region/division directories instead of a shorter version (default: False)  <br />
-&nbsp;&nbsp;-s, --send_email&nbsp;Send out the emails according to the distribution list (default: False)  <br />
+&nbsp;&nbsp;-l, --long_dir_names
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Use full-length names for the region/division directories instead of a shorter version (default: False)  <br />
+&nbsp;&nbsp;-s, --send_emai
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Send out the emails according to the distribution list (default: False)  <br />
 &nbsp;&nbsp;-f, --force_override_email  <br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Force the override of the email address in the config file in place of the NMRA email address (default: False)  <br />
  <br />
