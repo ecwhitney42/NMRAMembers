@@ -132,7 +132,10 @@ dmypy.json
 release/
 work/
 bin/MacOSX/
+bin/Win64/
 build/spec/
+build/MacOSX/
+build/Win64/
 .DS_Store
 ~*
 #
