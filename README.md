@@ -1,4 +1,4 @@
-# NMRAMembers
+# NMRAMembers v0.0.1
 
 NMRAMembers is a Python 3 program used to take the NMRA Membership ZIP file that is sent out each month by national to the region and distribute all of the individual division member rosters to a representative from each division.
 

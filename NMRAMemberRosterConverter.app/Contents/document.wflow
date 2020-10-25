@@ -131,7 +131,8 @@
 					<string>
 cd "$HOME/Desktop/NMRAMembers"
 
-./run.sh $1 </string>
+./bin/MacOS/NMRAMembers $1 &gt;&amp; $1.log
+</string>
 					<key>CheckedForUserDefaultShell</key>
 					<true/>
 					<key>inputMethod</key>
@@ -254,7 +255,7 @@ cd "$HOME/Desktop/NMRAMembers"
 	</array>
 	<key>connectors</key>
 	<dict>
-		<key>738A3A98-2FBC-4680-861F-6182854AC702</key>
+		<key>2132DA13-D80A-4A2C-BBBE-7C35EE499796</key>
 		<dict>
 			<key>from</key>
 			<string>818E9DE3-9ED5-4CEE-AEF3-FC07D9950B0A - 818E9DE3-9ED5-4CEE-AEF3-FC07D9950B0A</string>
