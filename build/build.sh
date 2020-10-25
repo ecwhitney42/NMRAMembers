@@ -20,7 +20,7 @@ if [ ! -d ${spec_path} ]; then
 fi;
 
 for script in *.py; do
-    echo "Building ${script}";
+    echo "Building ${script}...";
     echo "";
     pyinstaller --noconfirm --onefile --specpath ${spec_path} --distpath ${dist_path} --workpath ${work_path} --hidden-import pyexcel_xls.xls ${script};
 #    --hidden-import pyexcel_xlsx \
