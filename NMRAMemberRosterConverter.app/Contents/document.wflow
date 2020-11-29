@@ -128,10 +128,8 @@
 				<key>ActionParameters</key>
 				<dict>
 					<key>COMMAND_STRING</key>
-					<string>
-cd "$HOME/Desktop/NMRAMembers"
-
-./bin/MacOS/NMRAMembers $1 &gt;&amp; $1.log
+					<string>cd "$HOME/Desktop/NMRAMembers"
+./bin/MacOSX/NMRAMembers $1 &gt;&amp; $1.log
 </string>
 					<key>CheckedForUserDefaultShell</key>
 					<true/>
@@ -255,7 +253,7 @@ cd "$HOME/Desktop/NMRAMembers"
 	</array>
 	<key>connectors</key>
 	<dict>
-		<key>2132DA13-D80A-4A2C-BBBE-7C35EE499796</key>
+		<key>AE972A3F-1892-4137-8724-1D5184E9A694</key>
 		<dict>
 			<key>from</key>
 			<string>818E9DE3-9ED5-4CEE-AEF3-FC07D9950B0A - 818E9DE3-9ED5-4CEE-AEF3-FC07D9950B0A</string>
