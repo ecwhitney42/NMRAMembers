@@ -11,13 +11,19 @@ The currently supported platforms are MacOS Catalina (MacOSX 10.15) and Windows 
 **Installation Directory Structure:**
 
 -bin: contains the pyinstller executables
+
 -src: contains the Python sources
+
 -config: contains the spreadsheets used to configure NMRAMembers (more on this below)
+
 -build: directory used to run pyinstaller
+
 -work: created by NMRAMembers to unzip the nmra_zip_file and contains the processed files as the program runs
+
 -release: created by NMRAMembers to store the processed .zip output files
 
-THe NMRA files are sent with a name that matches the following pattern:
+
+The NMRA files are sent with a name that matches the following pattern:
 
 RRMMMYYYY.zip
 
