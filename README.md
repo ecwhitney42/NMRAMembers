@@ -1,4 +1,4 @@
-# NMRAMembers v0.0.2
+# NMRAMembers v0.0.3
 
 NMRAMembers is a Python 3 program used to take the NMRA Membership ZIP file that is sent out each month by national to the region and distribute all of the individual division member rosters to a representative from each division.
 
@@ -10,26 +10,20 @@ The currently supported platforms are MacOS Catalina (MacOSX 10.15) and Windows 
 
 **Installation Directory Structure:**
 
--bin: contains the pyinstller executables
-
--src: contains the Python sources
-
--config: contains the spreadsheets used to configure NMRAMembers (more on this below)
-
--build: directory used to run pyinstaller
-
--work: created by NMRAMembers to unzip the nmra_zip_file and contains the processed files as the program runs
-
--release: created by NMRAMembers to store the processed .zip output files
-
+<B>bin</B>: contains the pyinstller executables <br />
+<B>src</B>: contains the Python sources <br />
+<B>config</B>: contains the spreadsheets used to configure NMRAMembers (more on this below) <br />
+<B>build</B>: directory used to run pyinstaller <br />
+<B>work</B>: created by NMRAMembers to unzip the nmra_zip_file and contains the processed files as the program runs <br />
+<B>release</B>: created by NMRAMembers to store the processed .zip output files <br />
 
 The NMRA files are sent with a name that matches the following pattern:
 
-RRMMMYYYY.zip
+<B>RRMMMYYYY.zip</B>
 
--RR: the two-digit numerical region ID
--MMM: the three-letter month (Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec)
--YYYY: the four-digit year
+<B>RR</B>: the two-digit numerical region ID <br />
+<B>MMM</B>: the three-letter month (Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec) <br />
+<B>YYYY</B>: the four-digit year <br />
 
 This 9-character name is used as the directory name under the 'work' and 'release' directories to organize the files.
 
