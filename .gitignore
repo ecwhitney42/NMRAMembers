@@ -8,7 +8,9 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/
+build/MacOSX
+build/Win64
+build/spec
 develop-eggs/
 dist/
 downloads/
