@@ -8,9 +8,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/MacOSX
-build/Win64
-build/spec
+#build covered below in the project-specific directories
 develop-eggs/
 dist/
 downloads/
@@ -138,6 +136,7 @@ bin/Win64/
 build/spec/
 build/MacOSX/
 build/Win64/
+gitRelease/
 .DS_Store
 ~*
 #
