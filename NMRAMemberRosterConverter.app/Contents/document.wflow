@@ -130,7 +130,7 @@
 					<key>COMMAND_STRING</key>
 					<string>cd "$HOME/Desktop/NMRAMembers"
 zipname=${1}
-zipbase=`basename ${zipname}`
+zipbase=`basename ${zipname} .zip`
 if [ ! -d release ]; then
   mkdir release;
 fi;
@@ -248,7 +248,7 @@ fi;
 				<key>isViewVisible</key>
 				<true/>
 				<key>location</key>
-				<string>564.500000:528.000000</string>
+				<string>564.500000:469.000000</string>
 				<key>nibPath</key>
 				<string>/System/Library/Automator/Run Shell Script.action/Contents/Resources/Base.lproj/main.nib</string>
 			</dict>
@@ -258,7 +258,7 @@ fi;
 	</array>
 	<key>connectors</key>
 	<dict>
-		<key>00BF310D-87CA-4A52-AFF6-35C3B0A8282A</key>
+		<key>10BC6A89-E832-4E1E-A076-B4C90AA0BAA6</key>
 		<dict>
 			<key>from</key>
 			<string>818E9DE3-9ED5-4CEE-AEF3-FC07D9950B0A - 818E9DE3-9ED5-4CEE-AEF3-FC07D9950B0A</string>
