@@ -135,6 +135,7 @@ if [ ! -d release ]; then
   mkdir release;
 fi;
 ./bin/MacOSX/NMRAMembers ${zipname} &gt;&amp; release/${zipbase}.log
+open -a /System/Applications/Utilities/Console.app release/${zipbase}.log
 </string>
 					<key>CheckedForUserDefaultShell</key>
 					<true/>

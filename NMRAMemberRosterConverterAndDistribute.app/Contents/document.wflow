@@ -134,7 +134,9 @@ zipbase=`basename ${zipname} .zip`
 if [ ! -d release ]; then
   mkdir release;
 fi;
-./bin/MacOSX/NMRAMembers -s ${zipname} &gt;&amp; release/${zipbase}.log</string>
+./bin/MacOSX/NMRAMembers -s ${zipname} &gt;&amp; release/${zipbase}.log
+open -a /System/Applications/Utilities/Console.app release/${zipbase}.log
+</string>
 					<key>CheckedForUserDefaultShell</key>
 					<true/>
 					<key>inputMethod</key>
@@ -247,7 +249,7 @@ fi;
 				<key>isViewVisible</key>
 				<true/>
 				<key>location</key>
-				<string>564.500000:458.000000</string>
+				<string>564.500000:638.000000</string>
 				<key>nibPath</key>
 				<string>/System/Library/Automator/Run Shell Script.action/Contents/Resources/Base.lproj/main.nib</string>
 			</dict>
