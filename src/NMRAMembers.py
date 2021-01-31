@@ -152,14 +152,20 @@ def zip_directory(filename, directory):
 	except:
 		raise
 	pass
+	print('Opening zip file %s for writing from directory %s...' % (filename, directory))
 	with zipfile.ZipFile(filename, "w") as zip_ref:
+		print('Adding files:')
 		for dirname, subdirs, files in os.walk(directory):
 			zip_ref.write(dirname)
 			for fname in files:
-				zip_ref.write(os.path.join(dirname, fname))
+				if '.zip' in fname:
+					print('\t%s' % fname)
+					zip_ref.write(os.path.join(dirname, fname))
+				pass
 			pass
 		pass
 	pass
+	print('\n')
 pass
 ###############################################################################
 ###############################################################################
@@ -174,7 +180,7 @@ def main():
 # Create the program argument definitions
 #
 #------------------------------------------------------------------------------
-	program_version = "v0.5"
+	program_version = "v0.6"
 	default_reassignment_file=['./config/NMRA_Division_Reassignments.xlsx']
 	default_map_file=['./config/NMRA_Region_Division_Map.xlsx']
 	default_email_file=['./config/NMRA_Email_Distribution_List.xlsx']
@@ -326,6 +332,7 @@ def main():
 	# Zip up the output directories
 	#
 	os.chdir(work_dir)
+	print("Working directory: %s" % work_dir)
 	print("\nCreating all of the Region and Divsion ZIP files in: %s" % (dist_dir))
 	output_files = glob.glob("%s/*" % zip_name)
 	for output_file in output_files:
@@ -340,6 +347,10 @@ def main():
 	#
 	# Zip up all of the files
 	#
+	os.chdir(parent_dir)
+	release_parent_dir = "%s/.." % dist_dir
+	os.chdir(release_parent_dir)
+	print("Release directory: %s" % release_parent_dir)
 	full_zip_file_name = "%s/%s/%s_processed.zip" % (parent_dir, myargs.dist_dir[0], zip_filename)
 	print("\nCreating a complete zip file of %s in: %s" % (zip_name, full_zip_file_name))
 	zip_directory(full_zip_file_name, zip_name)

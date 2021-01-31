@@ -22,7 +22,8 @@ fi;
 for script in *.py; do
     echo "Building ${script}...";
     echo "";
-    pyinstaller --noconfirm --onefile --specpath ${spec_path} --distpath ${dist_path} --workpath ${work_path} --hidden-import pyexcel_xls.xls ${script};
+#    pyinstaller --noconfirm --onefile --specpath ${spec_path} --distpath ${dist_path} --workpath ${work_path} ${script};
+    pyinstaller --noconfirm --onefile --specpath ${spec_path} --distpath ${dist_path} --workpath ${work_path} --hidden-import pyexcel_xls.xls --hidden-import pyexcel_io.writers ${script};
 #    --hidden-import pyexcel_xlsx \
 #    --hidden-import pyexcel_xlsx.xlsxr \
 #    --hidden-import pyexcel_xlsx.xlsxw \
