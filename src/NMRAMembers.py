@@ -78,6 +78,7 @@
 # v0.3		Broke up the classes into individual files for easier code reuse
 # v0.4		Addressed more Excel dates showing up in the wrong format in the
 #			output files.
+# v0.7		Fixed bugs in zip file creation
 ###############################################################################
 ###############################################################################
 import sys
@@ -146,7 +147,7 @@ pass
 # Zip up the contents of the given directory to the given zip file
 #
 #------------------------------------------------------------------------------
-def zip_directory(filename, directory):
+def zip_directory(filename, directory, ziponly=False):
 	try:
 		os.access(directory, os.R_OK)
 	except:
@@ -154,11 +155,17 @@ def zip_directory(filename, directory):
 	pass
 	print('Opening zip file %s for writing from directory %s...' % (filename, directory))
 	with zipfile.ZipFile(filename, "w") as zip_ref:
-		print('Adding files:')
-		for dirname, subdirs, files in os.walk(directory):
-			zip_ref.write(dirname)
-			for fname in files:
-				if '.zip' in fname:
+		if (ziponly):
+			print('Adding zip files from directory: %s:' % (os.getcwd()))
+			for fname in glob.glob("*.zip"):
+				print('\t%s' % fname)
+				zip_ref.write(fname)
+			pass
+		else:
+			print('Adding roster files from directory: %s:' % (os.getcwd()))
+			for dirname, subdirs, files in os.walk(directory):
+				zip_ref.write(dirname)
+				for fname in files:
 					print('\t%s' % fname)
 					zip_ref.write(os.path.join(dirname, fname))
 				pass
@@ -180,7 +187,7 @@ def main():
 # Create the program argument definitions
 #
 #------------------------------------------------------------------------------
-	program_version = "v0.6"
+	program_version = "v0.7"
 	default_reassignment_file=['./config/NMRA_Division_Reassignments.xlsx']
 	default_map_file=['./config/NMRA_Region_Division_Map.xlsx']
 	default_email_file=['./config/NMRA_Email_Distribution_List.xlsx']
@@ -267,7 +274,7 @@ def main():
 #------------------------------------------------------------------------------
 	print("\nNMRA Roster ZIP File Processing Program")
 	print("by Erich Whitney")
-	print("Copyright (c) 2019, 2020 HomeBrew Engineering")
+	print("Copyright (c) 2019-2021 HomeBrew Engineering")
 	print("Version %s" % program_version)
 	print("")
 	#
@@ -319,7 +326,7 @@ def main():
 	# Create the division and region lists
 	#
 	parent_dir = os.getcwd()
-	print("\nProcessing Roster Files...")
+	print("\nProcessing NMRA Roster Files...")
 	print("NOTE: Warnings about OLE2 and file sizes are expected--these are caused by the really old version of Excel these NMRA files are saved in...")
 	roster_files = glob.glob("%s/*.xls" % (roster_file_dir))
 	for roster_file in roster_files:
@@ -331,29 +338,35 @@ def main():
 	#
 	# Zip up the output directories
 	#
-	os.chdir(work_dir)
-	print("Working directory: %s" % work_dir)
-	print("\nCreating all of the Region and Divsion ZIP files in: %s" % (dist_dir))
-	output_files = glob.glob("%s/*" % zip_name)
+	processed_files=[]
+	print("Creating .zip files for each Region/Division...")
+	zip_work_dir="%s/%s" % (work_dir, zip_name)
+	os.chdir(zip_work_dir)
+	print("Working directory: %s" % (zip_work_dir))
+	print("Creating all of the Region and Divsion ZIP files in: %s" % (dist_dir))
+	output_files = glob.glob("*")
 	for output_file in output_files:
 		if (os.path.isdir(output_file)):
+			print("Directory to Zip: %s" % output_file)
 			bn = os.path.basename(output_file)
 			zip_file_name = "%s/%s/%s.zip" % (parent_dir, dist_dir, bn)
 			print("\t%s/%s" % (dist_dir, os.path.basename(zip_file_name)))
 			roster_directory = output_file
-			zip_directory(zip_file_name, roster_directory)
+			zip_directory(zip_file_name, roster_directory, False)
+			processed_files.append(zip_file_name)
 		pass
 	pass
 	#
 	# Zip up all of the files
 	#
+	print("Creating a .zip file of all of the individual Region/Division .zip files...")
 	os.chdir(parent_dir)
-	release_parent_dir = "%s/.." % dist_dir
+	release_parent_dir = "%s" % (dist_dir)
 	os.chdir(release_parent_dir)
 	print("Release directory: %s" % release_parent_dir)
 	full_zip_file_name = "%s/%s/%s_processed.zip" % (parent_dir, myargs.dist_dir[0], zip_filename)
 	print("\nCreating a complete zip file of %s in: %s" % (zip_name, full_zip_file_name))
-	zip_directory(full_zip_file_name, zip_name)
+	zip_directory(full_zip_file_name, zip_name, True)
 	#
 	# Email the zip files to the distribution list
 	#

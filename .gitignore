@@ -128,6 +128,12 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# Slick Edit
+*.vpj
+*.vpw
+*.vtg
+*.vpwhistu
+
 # Project-specific ignores
 release/
 work/
@@ -137,6 +143,9 @@ build/spec/
 build/MacOSX/
 build/Win64/
 gitRelease/
+*.zip
+NMRAMemberRosterConverterAndDistribute.app/Contents/Resources/
+NMRAMemberRosterConverter.app/Contents/Resources/
 .DS_Store
 ~*
 #
