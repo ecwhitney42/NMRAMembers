@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>AMApplicationBuild</key>
-	<string>492</string>
+	<string>509</string>
 	<key>AMApplicationVersion</key>
 	<string>2.10</string>
 	<key>AMDocumentVersion</key>
@@ -77,7 +77,13 @@
 				</array>
 				<key>arguments</key>
 				<dict/>
+				<key>isViewVisible</key>
+				<integer>1</integer>
+				<key>location</key>
+				<string>207.000000:68.000000</string>
 			</dict>
+			<key>isViewVisible</key>
+			<integer>1</integer>
 		</dict>
 		<dict>
 			<key>action</key>
@@ -134,7 +140,8 @@ zipbase=`basename ${zipname} .zip`
 if [ ! -d release ]; then
   mkdir release;
 fi;
-./bin/MacOSX/NMRAMembers ${zipname} &gt;&amp; release/${zipbase}.log
+machine_arch=`uname -m`
+./bin/MacOSX/${machine_arch}/NMRAMembers ${zipname} &gt;&amp; release/${zipbase}.log
 open -a /System/Applications/Utilities/Console.app release/${zipbase}.log
 </string>
 					<key>CheckedForUserDefaultShell</key>
@@ -249,7 +256,7 @@ open -a /System/Applications/Utilities/Console.app release/${zipbase}.log
 				<key>isViewVisible</key>
 				<true/>
 				<key>location</key>
-				<string>564.500000:469.000000</string>
+				<string>497.500000:449.000000</string>
 				<key>nibPath</key>
 				<string>/System/Library/Automator/Run Shell Script.action/Contents/Resources/Base.lproj/main.nib</string>
 			</dict>
@@ -259,7 +266,7 @@ open -a /System/Applications/Utilities/Console.app release/${zipbase}.log
 	</array>
 	<key>connectors</key>
 	<dict>
-		<key>10BC6A89-E832-4E1E-A076-B4C90AA0BAA6</key>
+		<key>E650EBB2-4B58-47A3-AB87-4E6BA857053B</key>
 		<dict>
 			<key>from</key>
 			<string>818E9DE3-9ED5-4CEE-AEF3-FC07D9950B0A - 818E9DE3-9ED5-4CEE-AEF3-FC07D9950B0A</string>

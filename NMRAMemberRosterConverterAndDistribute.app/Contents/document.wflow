@@ -99,12 +99,10 @@
 						<string>0</string>
 					</dict>
 				</dict>
-				<key>conversionLabel</key>
-				<integer>0</integer>
 				<key>isViewVisible</key>
 				<integer>1</integer>
 				<key>location</key>
-				<string>564.500000:170.000000</string>
+				<string>490.000000:170.000000</string>
 				<key>nibPath</key>
 				<string>/System/Library/Automator/Launch Application.action/Contents/Resources/Base.lproj/main.nib</string>
 			</dict>
@@ -231,12 +229,10 @@ If the icon says "Restart Mail Server", then click “Continue” to proceed.</s
 						<string>2</string>
 					</dict>
 				</dict>
-				<key>conversionLabel</key>
-				<integer>0</integer>
 				<key>isViewVisible</key>
 				<integer>1</integer>
 				<key>location</key>
-				<string>564.500000:338.000000</string>
+				<string>490.000000:338.000000</string>
 				<key>nibPath</key>
 				<string>/System/Library/Automator/Wait for User Action.action/Contents/Resources/Base.lproj/main.nib</string>
 			</dict>
@@ -373,7 +369,8 @@ zipbase=`basename ${zipname} .zip`
 if [ ! -d release ]; then
   mkdir release;
 fi;
-./bin/MacOSX/NMRAMembers -f -s ${zipname} &gt;&amp; release/${zipbase}.log
+machine_arch=`uname -m`
+./bin/MacOSX/${machine_arch}/NMRAMembers -f -s ${zipname} &gt;&amp; release/${zipbase}.log
 open -a /System/Applications/Utilities/Console.app release/${zipbase}.log
 </string>
 					<key>CheckedForUserDefaultShell</key>
@@ -488,7 +485,7 @@ open -a /System/Applications/Utilities/Console.app release/${zipbase}.log
 				<key>isViewVisible</key>
 				<true/>
 				<key>location</key>
-				<string>564.500000:585.000000</string>
+				<string>490.000000:585.000000</string>
 				<key>nibPath</key>
 				<string>/System/Library/Automator/Run Shell Script.action/Contents/Resources/Base.lproj/main.nib</string>
 			</dict>
@@ -498,26 +495,26 @@ open -a /System/Applications/Utilities/Console.app release/${zipbase}.log
 	</array>
 	<key>connectors</key>
 	<dict>
-		<key>121E92E0-C090-49C5-B4DA-F260DB241D9B</key>
-		<dict>
-			<key>from</key>
-			<string>E1B0F71A-5603-495A-8E60-C64049E17889 - E1B0F71A-5603-495A-8E60-C64049E17889</string>
-			<key>to</key>
-			<string>818E9DE3-9ED5-4CEE-AEF3-FC07D9950B0A - 818E9DE3-9ED5-4CEE-AEF3-FC07D9950B0A</string>
-		</dict>
-		<key>83E502DE-0424-4ED1-964A-BD8A1E8648EB</key>
-		<dict>
-			<key>from</key>
-			<string>818E9DE3-9ED5-4CEE-AEF3-FC07D9950B0A - 818E9DE3-9ED5-4CEE-AEF3-FC07D9950B0A</string>
-			<key>to</key>
-			<string>AEAEB136-08A3-4613-9AAC-9A2438CC395B - AEAEB136-08A3-4613-9AAC-9A2438CC395B</string>
-		</dict>
-		<key>9814E5F2-FA56-4DB7-B02E-C4825D690F51</key>
+		<key>698A3F90-616C-4496-8C40-B4E6206349B4</key>
 		<dict>
 			<key>from</key>
 			<string>B1B4E700-7B19-4E4D-8898-DED82088FD29 - B1B4E700-7B19-4E4D-8898-DED82088FD29</string>
 			<key>to</key>
 			<string>E1B0F71A-5603-495A-8E60-C64049E17889 - E1B0F71A-5603-495A-8E60-C64049E17889</string>
+		</dict>
+		<key>6CC43483-4ACE-4D48-9568-8D9069F8B818</key>
+		<dict>
+			<key>from</key>
+			<string>E1B0F71A-5603-495A-8E60-C64049E17889 - E1B0F71A-5603-495A-8E60-C64049E17889</string>
+			<key>to</key>
+			<string>818E9DE3-9ED5-4CEE-AEF3-FC07D9950B0A - 818E9DE3-9ED5-4CEE-AEF3-FC07D9950B0A</string>
+		</dict>
+		<key>A75C1333-66F5-4615-81F9-BDD3AF9BB527</key>
+		<dict>
+			<key>from</key>
+			<string>818E9DE3-9ED5-4CEE-AEF3-FC07D9950B0A - 818E9DE3-9ED5-4CEE-AEF3-FC07D9950B0A</string>
+			<key>to</key>
+			<string>AEAEB136-08A3-4613-9AAC-9A2438CC395B - AEAEB136-08A3-4613-9AAC-9A2438CC395B</string>
 		</dict>
 	</dict>
 	<key>variables</key>
