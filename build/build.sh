@@ -1,8 +1,9 @@
 #!/bin/zsh
 
 src_dir="../src";
-dist_path="../bin/MacOSX";
-work_path="../build/MacOSX";
+machine_arch=`uname -m`
+dist_path="../bin/MacOSX/${machine_arch}";
+work_path="../build/MacOSX/${machine_arch}";
 spec_path="../build/spec";
 
 cd ${src_dir}
