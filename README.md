@@ -1,4 +1,4 @@
-# NMRAMembers v0.0.5
+# NMRAMembers v0.0.7
 
 NMRAMembers is a Python 3 program used to take the NMRA Membership ZIP file that is sent out each month by national to the region and distribute all of the individual division member rosters to a representative from each division.
 
@@ -32,7 +32,7 @@ This 9-character name is used as the directory name under the 'work' and 'releas
 
 **Dependencies (Install Python 3):**
 
-1) Install Python 3.7.6 using the installer. The reason this specific version is beause the current version of pyinstaller doesn't workw with anything later. If you want to run just the python, using a newer version should work fine.
+1) Install Python 3.9.2 using the installer. The reason this specific version is beause the current version of pyinstaller doesn't workw with anything later. If you want to run just the python, using a newer version should work fine.
 2) Optional: Install GitHub Desktop
 3) Open a Terminal window and run the following commands:
 
@@ -49,7 +49,7 @@ pip3 install pyinstaller
 
 **Dependencies (Install Python 3):**
 
-1) Install Python 3.7.6 using the installer. The reason this specific version is beause the current version of pyinstaller doesn't workw with anything later. If you want to run just the python, using a newer version should work fine.
+1) Install Python 3.9.2 using the installer. The reason this specific version is beause the current version of pyinstaller doesn't workw with anything later. If you want to run just the python, using a newer version should work fine.
 2) Optional: Install GitHub Desktop
 3) Open a Command Prompt window from the Windows System menu.
 4) Make sure that your Windows PATH Environment Variable includes %HOME%\AppData\Python\Python37\Scripts
@@ -80,7 +80,8 @@ For the Mac, there are two Apple Automator apps that can be used do drag and dro
 
 ```bash
 cd directory_where_you_downloaded_NMRAMembers
-./bin/MacOSX/NMRAMembers --help
+./bin/MacOSX/x86_64/NMRAMembers --help  (Intel)
+./bin/MacOSX/arm64/NMRAMembers --help   (Apple Silicon)
 ```
 
 **Running NMRAMembers to process 'nmra_zipfile' using Terminal**
