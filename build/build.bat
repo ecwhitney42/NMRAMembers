@@ -11,11 +11,12 @@ if not exist %dist_path% (mkdir %dist_path%)
 if not exist %work_path% (mkdir %work_path%)
 if not exist %spec_path% (mkdir %spec_path%)
 
-for %%S in (*.py) do (
-    echo "Building %%S..."
-    echo " "
-    pyinstaller --noconfirm --onefile --specpath %spec_path% --distpath %dist_path% --workpath %work_path% --hidden-import pyexcel_io.writers %%S
-)
+REMfor %%S in (*.py) do (
+REM    echo "Building %%S..."
+REM    echo " "
+REM    pyinstaller --noconfirm --onefile --specpath %spec_path% --distpath %dist_path% --workpath %work_path% --hidden-import pyexcel_io.writers %%S
+    pyinstaller --noconfirm --onefile --specpath %spec_path% --distpath %dist_path% --workpath %work_path% --hidden-import pyexcel_io.writers NMRAMembers.py
+REM)
 REM    --hidden-import pyexcel_io.readers.csvr^
 REM    --hidden-import pyexcel_io.readers.csvz^
 REM    --hidden-import pyexcel_io.readers.tsv^

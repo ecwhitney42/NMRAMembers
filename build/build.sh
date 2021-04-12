@@ -20,7 +20,8 @@ if [ ! -d ${spec_path} ]; then
     mkdir -p ${spec_path};
 fi;
 
-for script in *.py; do
+#for script in *.py; do
+script="NMRAMembers.py";
     echo "Building ${script}...";
     echo "";
 #    pyinstaller --noconfirm --onefile --specpath ${spec_path} --distpath ${dist_path} --workpath ${work_path} ${script};
@@ -39,7 +40,7 @@ for script in *.py; do
 #    --hidden-import pyexcel_io.database.importers.django \
 #    --hidden-import pyexcel_io.database.importers.sqlalchemy \
 #    --hidden-import pyexcel_io.database.exporters.django \
-done;
+#done;
 echo "Compiled Programs:";
 ls -l ${dist_path};
 
