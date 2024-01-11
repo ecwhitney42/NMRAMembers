@@ -21,51 +21,115 @@
 # that each month does not overwrite a previous month.
 #------------------------------------------------------------------------------
 import sys
-import pyexcel
-import pyexcel_xlsx
-import MemberInfo
+import pandas as pd 
 import DivisionMap
 import xlrd
 import xlwt
 import os
 import re
+import warnings
 
 class RosterFile:
 	#
 	# Constructor
 	#
-	def __init__(self, work_dir, nmra_map, use_long, reassignments):
+	
+	def __init__(self, roster_file, instance, enable_reassignment, work_dir, region, config, nmra_map, reassignments, legacy_mode):
+		self.roster_file = roster_file
+		self.region = region
 		self.work_dir = work_dir
 		self.nmra_map = nmra_map
-		self.use_long = use_long
 		self.reassignments = reassignments
-		self.member_info = MemberInfo.MemberInfo()
-		self.sheet_name = ""
+		self.legacy_mode = legacy_mode
 		self.region_filenames = {}
 		self.regions = []
 		self.division_filenames = {}
 		self.divisions = []
+		self.editor_filenames = {}
+		self.editor = []
 		self.report_name = ""
-		self.roster_wb = {}
-		self.roster_ws = {}
-		self.roster_wb_row = {}
-		self.roster_rb = None
-		self.roster_rs = None
+		self.roster_rxf = None
+		self.roster_rdf = None
+		self.roster_wrdf = {}
+		self.roster_wddf = {}
+		self.roster_wedf = {}
 		self.roster_nrows = 0
 		self.roster_ncols = 0
+		self.this_region = region
+		self.region_header = 'region'
+		self.enable_reassignment = enable_reassignment
+		self.instance = instance
+
+		self.validate = config.get_validate(roster_file)
+		self.roster_ifmt = config.get_input_format()
+		self.roster_ofmt = config.get_output_format()
+		self.date_fields = config.get_date_fields('reassignment', roster_file, self.instance)
+		self.recipient_list = config.get_recipients('reassignment', roster_file, self.instance)
+		self.date_format = config.get_date_format()
+		self.recipients = {}
+		for recipient in self.recipient_list:
+			self.recipients.update({recipient : []})
+		pass 
+		
+#		print("The recipients are: %s" % (self.recipient_list))
+#		print("Date Fields are: %s" % (self.date_fields))
+#		print("Date Format is: %s" % (self.date_format))
+
 	pass
+
+	def get_id(self, row):
+		return '%s' % (self.roster_rdf.at[row, 'id'])
+	pass
+	def get_lname(self, row):
+		return '%s' % (self.roster_rdf.at[row, 'lname'])
+	pass
+	def get_fname(self, row):
+		return '%s' % (self.roster_rdf.at[row, 'fname'])
+	pass
+	def get_email(self, row):
+		if 'email' in self.roster_rdf.columns:
+			a_email	= '%s' % (self.roster_rdf.at[row, 'email'])
+		else:
+			a_email = ''
+		pass
+		return a_email
+	pass
+	def get_division(self, row):
+		t_division	= self.roster_rdf.at[row, 'division']
+		try:
+			a_division	=    int(t_division)
+		except ValueError:
+			a_division  = 0
+		pass
+		return a_division
+	pass
+	def get_region(self, row):
+		t_region	= self.roster_rdf.at[row, self.region_header]
+		try:
+			a_region	=    int(t_region)
+		except ValueError:
+			a_region    = 0
+		pass
+		return a_region
+	pass
+
 	#
 	# this method returns true if the given member ID is in the list of reassignments 
 	# and the first and last name matches and the from division is not the to division 
 	#
-	def is_member_reassigned(self, nmra_id):
+	def is_member_reassigned(self, nmra_id, row):
 		ret_val = False
 		if (self.reassignments.has_member(nmra_id)):
-			if ((self.member_info.get_division() == self.reassignments.get_from_division(nmra_id)) and (self.member_info.get_division() != self.reassignments.get_to_division(nmra_id))):
-				if ((self.member_info.get_lname() == self.reassignments.get_lname(nmra_id)) and (self.member_info.get_fname() == self.reassignments.get_fname(nmra_id))):
+			if ((self.get_division(row) == self.reassignments.get_from_division(nmra_id)) and (self.get_division(row) != self.reassignments.get_to_division(nmra_id))):
+				if ((self.get_lname(row) == self.reassignments.get_lname(nmra_id)) and (self.get_fname(row) == self.reassignments.get_fname(nmra_id))):
 					ret_val = True
 				else:
 					print("WARNING: Reassignment found for member %s, however, the name doesn't match so no reassignment" % nmra_id)
+#					print("From Division: %d <=> %d" % (self.get_division(row), self.reassignments.get_from_division(nmra_id)))
+#					print("To Division: %d <=> %d" % (self.get_division(row), self.reassignments.get_to_division(nmra_id)))
+#					print("Last Name: %s=> %s" % (self.get_lname(row), self.reassignments.get_lname(nmra_id)))
+#					print("First Name: %s <=> %s" % (self.get_fname(row), self.reassignments.get_fname(nmra_id)))
+						  
 				pass
 			pass
 		pass
@@ -75,157 +139,177 @@ class RosterFile:
 	# Read the given roster file and save the information necessary to create a new workbook from it.
 	# This is where we are able to read in the crusty old version of Excel files.
 	#
-	def read_file(self, file_name):
-		#
-		# Read in the .xls in its crusty old Excel format--this may issue warnings
-		# but they can be ignored
-		#
-		try:
-			self.roster_rb = xlrd.open_workbook(filename=file_name, encoding_override="cp1252", formatting_info = True)
-		except:
-			print("Roster File Error: ", sys.exc_info()[0])
-			raise
-		pass
+	def read_file(self, filename, legacy_mode):
 		#
 		# Get the sheet
 		#
-		self.roster_rs = self.roster_rb.sheet_by_index(0)
-
-		self.roster_ncols = self.roster_rs.ncols
-		self.roster_nrows = self.roster_rs.nrows
+		self.roster_exf = pd.ExcelFile(filename)
+		self.roster_rdf = self.roster_exf.parse()
+		#
+		# Make all of the column headings lower case
+		#
+#		print("%s" % (self.roster_rdf.columns))	
+		for col in range(0, len(self.roster_rdf.columns)):
+			old = self.roster_rdf.columns[col]
+			new = old.lower()
+			if (new == 'memberregion'):
+				self.region_header = new
+			pass
+#			print("\t%s=>%s" % (old, new))
+			self.roster_rdf.rename(columns={old : new}, inplace=True)
+		pass
+		#
+		# Fix the date field
+		#
+		for field in self.date_fields:
+#			print("Setting column %s to %s format..." % (field, self.date_format))
+			self.roster_rdf[field]=pd.to_datetime(self.roster_rdf[field])
+			self.roster_rdf[field]=self.roster_rdf[field].dt.strftime(self.date_format)
+		pass
 		#
 		# take out the extra numbers in the filename and save the root string
 		# to a report_name that way we can write out cleaner filenames
 		#
-		report_file = os.path.splitext(os.path.basename(file_name))
+		report_file = os.path.splitext(os.path.basename(filename))
 		self.report_name = report_file[0]
 		re1 = re.compile(r'^(\d+)_(.*)')
 		self.report_name = re1.sub(r'\2', self.report_name)
 		re2 = re.compile(r'(.*)(\d+)$')
 		self.report_name = re2.sub(r'\1', self.report_name)
-		#
-		# Look at the header to get the MemberInfo
-		#
-		for col in range(0, self.roster_ncols):
-			self.member_info.add_column_header(self.roster_rs.cell(0, col).value, col)
-		pass
-		if (not self.member_info.has_valid_header()):
-			raise ValueError("%s doesn't have the required headers" % (file_name))
-		pass
-		#
-		# This fixes a problem with long sheet names that the NMRA uses with their
-		# crusty old format--just truncate the sheet name to 31 characters
-		#
-		for sn in self.roster_rb.sheet_names():
-			if (len(sn) > 31):
-				self.sheet_name = sn[0:30]
-			else:
-				self.sheet_name = sn
-			pass
-		pass
+	pass
+	#
+	# Create a standard filename
+	#
+	def format_filename(self, dir_path):
+		filename = "%s/%s.%s" % (dir_path, self.report_name, self.roster_ofmt)
+		return(filename)
 	pass
 	#
 	# Create a workbook for a given output file.
-	# This uses the xlwt library to create the workbook
 	#
-	def create_workbook(self, nmra_id, dir_path):
+	def create_workbook(self, nmra_id, dir_path, recipient):
 		os.makedirs("%s" % dir_path, exist_ok=True)
-		self.division_filenames[nmra_id] = "%s/%s.xls" % (dir_path, self.report_name)
-		#
-		# Create a new workbook to copy it into for processing
-		#
-		self.roster_wb[nmra_id] = xlwt.Workbook(style_compression=2)
-		self.roster_ws[nmra_id] = self.roster_wb[nmra_id].add_sheet(self.sheet_name, cell_overwrite_ok=True)
-		#
-		# insert the header row into this worksheet
-		#
-		if (not nmra_id in self.roster_wb_row.keys()):
-			self.roster_wb_row[nmra_id] = 1
-			for col in range(0, self.roster_ncols):
-				self.roster_ws[nmra_id].write(0, col, self.member_info.get_name(col))
-			pass	
+		filename = self.format_filename(dir_path)
+		if (recipient == 'region'):
+			if (not nmra_id in self.region_filenames.keys()):
+#				print("**Creating Region Workbook %s, %s" % (nmra_id, filename))
+				self.region_filenames[nmra_id] = filename
+				self.roster_wrdf[nmra_id] = pd.DataFrame(columns=self.roster_rdf.columns)
+			pass
+		elif (recipient == 'division'):
+			if (not nmra_id in self.division_filenames.keys()):
+#				print("**Creating Division Workbook %s, %s" % (nmra_id, filename))
+				self.division_filenames[nmra_id] = filename
+				self.roster_wddf[nmra_id] = pd.DataFrame(columns=self.roster_rdf.columns)
+		elif (recipient == 'editor'):
+			if (not nmra_id in self.editor_filenames.keys()):
+#				print("**Creating Editor Workbook %s, %s" % (nmra_id, filename))
+				self.editor_filenames[nmra_id] = filename
+				self.roster_wedf[nmra_id] = pd.DataFrame(columns=self.roster_rdf.columns)
+			pass
 		pass
+		#
+		# Create a new workbook to copy it into for processing, add the header
+		#
+		
 	pass
 	#
 	# Copy member info from current worksheet to given output worksheet
-	# This has to look for dates and zip codes and handle their formatting explicitly
 	#
-	def write_row(self, file_id, row):
-		for col in range(0, self.roster_ncols):
-			cell_value = self.roster_rs.cell_value(row, col)
-			cell_type = self.roster_rs.cell_type(row, col)
-			if (cell_type == 3):
-				self.roster_ws[file_id].write(self.roster_wb_row[file_id], col, cell_value, xlwt.Style.easyxf(num_format_str="mm/dd/yyyy"))
-			elif (cell_type == 2 and self.member_info.get_name(col)=="zip"):
-				self.roster_ws[file_id].write(self.roster_wb_row[file_id], col, cell_value, xlwt.Style.easyxf(num_format_str="00000"))
-			else:
-				self.roster_ws[file_id].write(self.roster_wb_row[file_id], col, cell_value)
+	def write_row(self, file_id, row, recipient):
+		warnings.simplefilter(action="ignore", category=FutureWarning)
+		if (recipient == 'region'):
+			wdr_row = len(self.roster_wrdf[file_id].index)
+#			print("1:Writing new row %d from row %d for id: %s" % (wdr_row, row, file_id))
+			for col in self.roster_rdf.columns:
+				self.roster_wrdf[file_id].loc[wdr_row, col] = self.roster_rdf.at[row, col]
+			pass
+		elif (recipient == 'division'):
+			wdr_row = len(self.roster_wddf[file_id].index)
+#			print("2:Writing new row %d from row %d for id: %s" % (wdr_row, row, file_id))
+			for col in self.roster_rdf.columns:
+				self.roster_wddf[file_id].loc[wdr_row, col] = self.roster_rdf.at[row, col]
+			pass
+		elif (recipient == 'editor'):
+			wdr_row = len(self.roster_wedf[file_id].index)
+#			print("3:Writing new row %d from row %d for id: %s" % (wdr_row, row, file_id))
+			for col in self.roster_rdf.columns:
+				self.roster_wedf[file_id].loc[wdr_row, col] = self.roster_rdf.at[row, col]
 			pass
 		pass
-		self.roster_wb_row[file_id] = self.roster_wb_row[file_id] + 1
 	pass
 	#
 	# Copy member info from current worksheet to given output worksheet
 	# and reassign this member to the given region/division if necessary
 	#
-	def reassign_member(self, file_id, row, new_region, new_division):
-		r_col = self.member_info.get_column('region')
-		d_col = self.member_info.get_column('division')
-		for col in range(0, self.roster_ncols):
-			cell_value = self.roster_rs.cell_value(row, col)
-			cell_type = self.roster_rs.cell_type(row, col)
-			if (col == r_col):
-				self.roster_ws[file_id].write(self.roster_wb_row[file_id], col, "%02d" % new_region)
-			elif (col == d_col):
-				self.roster_ws[file_id].write(self.roster_wb_row[file_id], col, "%02d" % new_division)
-			else:
-				if (cell_type == 3):
-					self.roster_ws[file_id].write(self.roster_wb_row[file_id], col, cell_value, xlwt.Style.easyxf(num_format_str="mm/dd/yyyy"))
-				elif (cell_type == 2 and self.member_info.get_name(col)=="zip"):
-					self.roster_ws[file_id].write(self.roster_wb_row[file_id], col, cell_value, xlwt.Style.easyxf(num_format_str="00000"))
+	def reassign_member(self, file_id, row, new_region, new_division, recipient):
+		if (recipient == 'region'):
+			wdr_row = len(self.roster_wrdf[file_id].index)
+#			print("4:Writing new row %d from row %d for id: %s" % (wdr_row, row, file_id))
+			for col in self.roster_rdf.columns:
+				if (col == self.region_header):
+					self.roster_wrdf[file_id].loc[wdr_row, col] = new_region
+				elif (col == 'division'):
+					self.roster_wrdf[file_id].loc[wdr_row, col] = new_division
 				else:
-					self.roster_ws[file_id].write(self.roster_wb_row[file_id], col, cell_value)
+					self.roster_wrdf[file_id].loc[wdr_row, col] = self.roster_rdf.at[row, col]
+				pass
+			pass
+		elif (recipient == 'division'):
+			wdr_row = len(self.roster_wddf[file_id].index)
+#			print("5:Writing new row %d from row %d for id: %s" % (wdr_row, row, file_id))
+			for col in self.roster_rdf.columns:
+				if (col == self.region_header):
+					self.roster_wddf[file_id].loc[wdr_row, col] = new_region
+				elif (col == 'division'):
+					self.roster_wddf[file_id].loc[wdr_row, col] = new_division
+				else:
+					self.roster_wddf[file_id].loc[wdr_row, col] = self.roster_rdf.at[row, col]
+				pass
+			pass
+		elif (recipient == 'editor'):
+			wdr_row = len(self.roster_wedf[file_id].index)
+#			print("6:Writing new row %d from row %d for id: %s" % (wdr_row, row, file_id))
+			for col in self.roster_rdf.columns:
+				if (col == self.region_header):
+					self.roster_wedf[file_id].loc[wdr_row, col] = new_region
+				elif (col == 'division'):
+					self.roster_wedf[file_id].loc[wdr_row, col] = new_division
+				else:
+					self.roster_wedf[file_id].loc[wdr_row, col] = self.roster_rdf.at[row, col]
 				pass
 			pass
 		pass
-		self.roster_wb_row[file_id] = self.roster_wb_row[file_id] + 1
 	pass
 	#
 	# Write a member to the given row and check if they are reassigned
 	#
-	def write_member(self, nmra_id, row, division, region_id, division_id):
-		m_region = self.member_info.get_region()
-		m_division = self.member_info.get_division()
-		#
-		# check to see if this member is reassigned or not
-		#
-		reassign = self.is_member_reassigned(nmra_id)
-		if (reassign):
-			r_region = self.reassignments.get_to_region(nmra_id)
-			r_division = self.reassignments.get_to_division(nmra_id)
+	def write_member(self, nmra_id, row, dataframe_id, recipient):
+		m_region = self.get_region(row)
+		if (m_region != self.region):
+			self.write_row(dataframe_id, row, recipient)
 		else:
-			r_region = m_region
-			r_division = m_division
-		pass
-		#
-		# Write to the division file if this member is in a division
-		#
-		if (division > 0):
+			m_division = self.get_division(row)
+			#
+			# check to see if this member is reassigned or not
+			#
+			reassign = self.is_member_reassigned(nmra_id, row)
+			if (reassign):
+				r_region = self.reassignments.get_to_region(nmra_id)
+				r_division = self.reassignments.get_to_division(nmra_id)
+			else:
+				r_region = m_region
+				r_division = m_division
+			pass
+			#
+			# Write to the division file if this member is in a division
+			#
 			if (reassign):
 				print("\tProcessing division reassignment for NMRA member %s from division %02d%02d to division %02d%02d" % (nmra_id, m_region, m_division, r_region, r_division))
-				self.reassign_member(division_id, row, r_region, r_division)
+				self.reassign_member(dataframe_id, row, r_region, r_division, recipient)
 			else:
-				self.write_row(division_id, row)
+				self.write_row(dataframe_id, row, recipient)
 			pass
-		pass
-		#
-		# Write all members to their appropriate division
-		#
-		if (reassign):
-			print("\tProcessing division reassignment for NMRA member %s from division %02d%02d to division %02d%02d" % (nmra_id, m_region, m_division, r_region, r_division))
-			self.reassign_member(region_id, row, r_region, r_division)
-		else:
-			self.write_row(region_id, row)
 		pass
 	pass
 
@@ -233,17 +317,29 @@ class RosterFile:
 	# Save the current output workbooks
 	#
 	def save_workbooks(self):
-		for div_fid in self.division_filenames.keys():
-			self.roster_wb[div_fid].save(self.division_filenames[div_fid])
-		pass
-		for reg_fid in self.region_filenames.keys():
-			self.roster_wb[reg_fid].save(self.region_filenames[reg_fid])
+		for recipient in self.recipient_list:
+			if (recipient == 'division'):
+				for div_fid in self.division_filenames.keys():
+#					print("**Saving Division Workbook %s, %s" % (div_fid, self.division_filenames[div_fid]))
+					self.roster_wddf[div_fid].to_csv(self.division_filenames[div_fid], index=False, date_format=self.date_format)
+				pass
+			elif (recipient == 'region'):
+				for reg_fid in self.region_filenames.keys():
+#					print("**Saving Region Workbook %s, %s" % (reg_fid, self.region_filenames[reg_fid]))
+					self.roster_wrdf[reg_fid].to_csv(self.region_filenames[reg_fid], index=False, date_format=self.date_format)
+				pass
+			elif (recipient == 'editor'):
+				for ed_fid in self.editor_filenames.keys():
+#					print("**Saving Region Workbook %s, %s" % (self.editor_filenames[ed_fid]))
+					self.roster_wedf[ed_fid].to_csv(self.editor_filenames[ed_fid], index=False, date_format=self.date_format)
+				pass
+			pass
 		pass
 	pass
 	#
 	# Processes the current workbook in memory
 	#
-	def process(self, distribution, parent_dir, dist_dir, zip_filename, force_override):
+	def process(self, distribution, parent_dir, dist_dir, zip_filename, force_override, legacy_mode):
 		#
 		# Iterate through the rows of each roster worksheet and split into new division and region workbooks
 		#
@@ -259,34 +355,31 @@ class RosterFile:
 		r_email		= ""
 		reg_fid		= ""
 		div_fid		= ""
-		for row in range(1, self.roster_nrows):
+		
+#		print("********Iterating through %d rows of %s for recipients: %s" % (len(self.roster_rdf.index), self.roster_file, self.recipient_list))
+#
+#			print("********This file will be used to validate the email distribution list members")
+#		pass
+		for row in self.roster_rdf.index:
 			#
-			# The first row contains the column headings we need to find the offsets
+			# find the required parameters for this member
 			#
-			ncol = self.roster_ncols
-			self.member_info.set_member(self.roster_rs, row)
-
-			a_id		= self.member_info.get_id()
-			a_region	= self.member_info.get_region()
-			a_division	= self.member_info.get_division()
-			a_lname		= self.member_info.get_lname()
-			a_fname		= self.member_info.get_fname()
-			a_email		= self.member_info.get_email()
-			#
-			# Create a workbook for each division and region encountered
-			#
-			# If it's a just a region entry, put it in a region file otherwise break out by division
-			#
-			# This converts the 4-digit _fid code to a text _name string if it's in the division map
-			#
+			a_id = self.get_id(row)
+			a_lname = self.get_lname(row)
+			a_fname = self.get_fname(row)
+			a_email = self.get_email(row)
+			a_division = self.get_division(row)
+			a_region = self.get_region(row)
 			reg_fid = self.nmra_map.get_file_id(a_region, 0)
+			this_reg_fid = self.nmra_map.get_file_id(self.region, 0)
+			this_reg_name = self.nmra_map.get_region_id(this_reg_fid)
 			div_fid = self.nmra_map.get_file_id(a_region, a_division)
-			if (self.reassignments.has_member(a_id)):
+			if (self.enable_reassignment and self.reassignments.has_member(a_id)):
 				r_region	= self.reassignments.get_to_region(a_id)
 				r_division	= self.reassignments.get_to_division(a_id)
 				r_lname		= self.reassignments.get_lname(a_id)
 				r_fname		= self.reassignments.get_fname(a_id)
-				if (self.is_member_reassigned(a_id)):
+				if (self.is_member_reassigned(a_id, row)):
 					reg_fid = self.nmra_map.get_file_id(r_region, 0)
 					div_fid = self.nmra_map.get_file_id(r_region, r_division)
 				pass
@@ -296,6 +389,11 @@ class RosterFile:
 				r_lname		= a_lname
 				r_fname		= a_fname
 			pass
+			if self.nmra_map.has_region_id(reg_fid):
+				reg_name = self.nmra_map.get_region_id(reg_fid)
+			else:
+				raise ValueError("Region ID for %s not found in the map" % reg_fid)
+			pass
 			#
 			# Make sure we have mapped this region/division
 			#
@@ -304,50 +402,123 @@ class RosterFile:
 				# The difference between long and short region names comes from
 				# the NMRA Region/Division MAP file that has the RID column
 				#
-				if self.use_long:
-					reg_name = self.nmra_map.get_region(reg_fid)
-				else:
-					reg_name = self.nmra_map.get_region_id(reg_fid)
-				pass
+				reg_name = self.nmra_map.get_region_id(reg_fid)
 			else:
 				raise ValueError("Region ID for %s not found in the map" % reg_fid)
 			pass
 			if self.nmra_map.has_division(div_fid):
 				div_name = self.nmra_map.get_division(div_fid)
 			else:
-				raise ValueError("Division for %s not found in the map", div_fid)
+				raise ValueError("Division for %s not found in the map" % div_fid)
+			pass
+#			print("**********Found member in %s Region, %s Division" % (reg_name, div_name))
+			#
+			# Create a workbook for each division and region encountered
+			#
+			# If it's a just a region entry, put it in a region file otherwise break out by division
+			#
+			# This converts the 4-digit _fid code to a text _name string if it's in the division map
+			#
+			# members in a file from other regions just go into this regions files.
+			#
+			region_only = False
+			for recipient in self.recipient_list:
+#				print("%s" % (recipient))
+				if (recipient == 'region'):
+					if (not a_region == self.region):
+						if (not this_reg_fid in self.regions):
+							region_only = True
+							self.regions.append(this_reg_fid)
+							reg_dir = "%s/%s_Region" % (self.work_dir, this_reg_name)
+							self.create_workbook(this_reg_fid, reg_dir, recipient)
+							if (recipient in self.recipient_list):
+								if (not recipient in self.recipients.keys()):
+									self.recipients.update({recipient: [self.format_filename(reg_dir)]})
+								else:
+									self.recipients[recipient].append(self.format_filename(reg_dir))
+								pass
+							pass
+						pass
+						self.write_member(a_id, row, this_reg_fid, recipient)
+					else:
+						if ((not reg_fid in self.regions) and (recipient in self.recipient_list)):
+							self.regions.append(reg_fid)
+							reg_dir = "%s/%s_Region" % (self.work_dir, reg_name)
+							self.create_workbook(reg_fid, reg_dir, recipient)
+							if (recipient in self.recipient_list):
+								if (not recipient in self.recipients.keys()):
+									self.recipients.update({recipient: [self.format_filename(reg_dir)]})
+								else:
+									self.recipients[recipient].append(self.format_filename(reg_dir))
+								pass
+							pass
+						pass
+						self.write_member(a_id, row, reg_fid, recipient)
+				elif (recipient == 'division'):
+#					print("%d <=> %d" % (a_region, self.region))
+					if (not (a_region == self.region)):
+						if (not reg_fid in self.regions):
+							region_only = True
+							self.regions.append(this_reg_fid)
+							reg_dir = "%s/%s_Region" % (self.work_dir, this_reg_name)
+							self.create_workbook(this_reg_fid, reg_dir, recipient)
+							if (recipient in self.recipient_list):
+								if (not recipient in self.recipients.keys()):
+									self.recipients.update({recipient: [self.format_filename(reg_dir)]})
+								else:
+									self.recipients[recipient].append(self.format_filename(reg_dir))
+								pass
+							pass
+						pass
+						self.write_member(a_id, row, this_reg_fid, recipient)
+					else:
+						if (r_division == 0):
+							print("NMRA-ERROR!: Division Member %s: %-20s %-45s has their division ID set to 0 from the NMRA report, therefore they won't appear in their division report!" % (a_id, "%s %s" % (a_fname, a_lname), "(%s)" % a_email))
+						else:
+							if ((not div_fid in self.divisions) and (recipient in self.recipient_list)):
+								self.divisions.append(div_fid)
+								div_dir = "%s/%s_Region-%s_Division" % (self.work_dir, reg_name, div_name)
+								self.create_workbook(div_fid, div_dir, recipient)
+								if (recipient in self.recipient_list):
+									if (not recipient in self.recipients.keys()):
+										self.recipients.update({recipient: [self.format_filename(div_dir)]})
+									else:
+										self.recipients[recipient].append(self.format_filename(div_dir))
+									pass
+								pass
+							pass
+							self.write_member(a_id, row, div_fid, recipient)
+						pass
+					pass
+				elif (recipient == 'editor'):
+					if ('editor' in self.recipient_list):						
+						ed_fid = this_reg_fid
+						self.editor.append(ed_fid)
+						ed_dir = "%s/%s_Region_Editor" % (self.work_dir, this_reg_name)
+						self.create_workbook(ed_fid, ed_dir, recipient)
+						if (not recipient in self.recipients.keys()):
+							self.recipients.update({recipient : [self.format_filename(ed_dir)]})
+						else:
+							self.recipients[recipient].append(self.format_filename(ed_dir))
+						pass
+						self.write_member(a_id, row, ed_fid, recipient)
+					pass
+				pass
 			pass
 			#
-			# Assign the output file to the correct region or division
+			# update the distribution lists--only regional members will be in the distribution list
+			# and only for the list marked validate="True" in the XML
 			#
-			if ((not div_fid in self.divisions) and (r_division > 0)):
-				self.divisions.append(div_fid)
-				if self.use_long:
-					div_dir = "%s/%s_Region-%s_Division" % (self.work_dir, reg_name, div_name)
-				else:
-					div_dir = "%s/%s_Region-%s_Division" % (self.work_dir, reg_name, div_name)
-				pass
-				self.create_workbook(div_fid, div_dir)
+			if ((reg_fid == this_reg_fid) and not region_only and self.validate):
+				distribution.validate_recipient(self.nmra_map, parent_dir, dist_dir, zip_filename, a_id, r_region,
+											r_division, r_lname, r_fname, a_email, force_override)
 			pass
-			if (not reg_fid in self.regions):
-				self.regions.append(reg_fid)
-				if self.use_long:
-					reg_dir = "%s/%s_Region" % (self.work_dir, reg_name)
-				else:
-					reg_dir = "%s/%s_Region" % (self.work_dir, reg_name)
-				pass
-				self.create_workbook(reg_fid, reg_dir)
-			#
-			# update the division and region entries
-			#
-			self.write_member(a_id, row, r_division, reg_fid, div_fid)
-			distribution.validate_recipient(self.use_long, self.nmra_map, parent_dir, dist_dir, zip_filename, a_id, r_region, r_division, r_lname, r_fname, a_email, force_override)
-			
 		pass
 		#
 		# at the end of the input sheet, write out all of the output sheets we made
 		#
 		self.save_workbooks()
+		return(self.recipients)
 	pass
 pass
 

@@ -20,8 +20,7 @@
 #
 #------------------------------------------------------------------------------
 import sys
-import pyexcel
-import pyexcel_xlsx
+import pandas as pd
 
 class MemberReassignments:
 	#
@@ -29,7 +28,7 @@ class MemberReassignments:
 	#
 	def __init__(self):
 		self.members = {}
-		self.required_columns = {'id' : -1, 'from_region' : -1, 'from_division' : -1, 'to_region' : -1, 'to_division' : -1, 'lname' : -1, 'fname' : -1}
+		self.required_columns = ['id', 'from_region', 'from_division', 'to_region', 'to_division', 'lname', 'fname']
 	pass
 	#
 	# Return the given field from the reassignment list for the given NMRA member
@@ -67,12 +66,6 @@ class MemberReassignments:
 		pass
 	pass
 	#
-	# get the column number for the given column
-	#
-	def get_column(self, name):
-		return self.required_columns[name]
-	pass
-	#
 	# Add a member to the reassignment list
 	#
 	def add_member(self, nmra_id, from_region, from_division, to_region, to_division, lname, fname):
@@ -84,51 +77,38 @@ class MemberReassignments:
 	def read_file(self, filename):
 		print("Reading the NMRA Member Division Reassignment File: %s" % filename)
 		try:
-			reassign_ws = pyexcel.get_sheet(file_name=filename)
+			excel_file = pd.ExcelFile(filename)
 		except:
 			print("Division Reassignment Error: ", sys.exc_info()[0])
 			raise
 		pass
 
-		all_good = True
-		row_num = 0
-		for row in reassign_ws:
-			#
-			# The first row contains the column headings we need to find the offsets
-			#
-			if (row_num == 0):
-				col_num = 0
-				for cell in row:
-					for key in self.required_columns.keys():
-						if (cell == key):
-							self.required_columns[key] = col_num
-						pass
-					col_num = col_num + 1
-				pass
-				for key in self.required_columns.keys():
-					if (self.required_columns[key] == -1):
-						all_good = False
-					pass
-				pass
-				if (all_good == False):
-					raise ValueError('All required columns MUST be included in the Division Reassignment file!')
-				pass
-			else:
-				r_id       = "%s" % row[self.required_columns['id']]
-				f_region   = int(row[self.required_columns['from_region']])
-				f_division = int(row[self.required_columns['from_division']])
-				t_region   = int(row[self.required_columns['to_region']])
-				t_division = int(row[self.required_columns['to_division']])
-				r_lname    = "%s" % row[self.required_columns['lname']]
-				r_fname    = "%s" % row[self.required_columns['fname']]
-				if (f_region != t_region):
-					raise ValueError('NMRA Members are NOT allowed to change regions with this program!')
-				pass
-				print("Reassigning NMRA Member %s, (%s, %s) from Division %02d%02d to Division %02d%02d" % (r_id, r_lname, r_fname, f_region, f_division, t_region, t_division))
+		data_frame = excel_file.parse()
+		header = data_frame.columns
 
-				self.add_member(r_id, f_region, f_division, t_region, t_division, r_lname, r_fname)
+		all_good = True
+		for name in self.required_columns:
+			if not (name.lower() in [x.lower() for x in header]):
+				all_good = False
 			pass
-			row_num = row_num + 1	
+		pass	
+		if (all_good == False):
+			raise ValueError('All required columns MUST be included in the Division Reassignment file!')
+		pass
+		for row, data in data_frame.iterrows():
+			r_id       = "%s" % data['id']
+			f_region   = int(data['from_region'])
+			f_division = int(data['from_division'])
+			t_region   = int(data['to_region'])
+			t_division = int(data['to_division'])
+			r_lname    = "%s" % data['lname']
+			r_fname    = "%s" % data['fname']
+			if (f_region != t_region):
+				raise ValueError('NMRA Members are NOT allowed to change regions with this program!')
+			pass
+			print("Reassigning NMRA Member %s, (%s, %s) from Division %02d%02d to Division %02d%02d" % (r_id, r_lname, r_fname, f_region, f_division, t_region, t_division))
+
+			self.add_member(r_id, f_region, f_division, t_region, t_division, r_lname, r_fname)
 		pass
 	pass
 pass

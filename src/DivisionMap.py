@@ -24,8 +24,7 @@
 #
 #------------------------------------------------------------------------------
 import sys
-import pyexcel
-import pyexcel_xlsx
+import pandas as pd
 
 class DivisionMap:
 	#
@@ -35,7 +34,7 @@ class DivisionMap:
 		self.region_map = {}
 		self.region_ids = {}
 		self.division_map = {}
-		self.required_columns = {'region' : -1, 'division' : -1, 'name' : -1, 'RID' : -1}
+		self.required_columns = ['region', 'division', 'name', 'RID']
 
 	pass
 	#
@@ -98,48 +97,42 @@ class DivisionMap:
 	def read_file(self, filename):
 		print("Reading the NMRA Region/Division Map File: %s" % filename)
 		try:
-			dmap_ws = pyexcel.get_sheet(file_name=filename)
+			excel_file = pd.ExcelFile(filename)
 		except:
 			print("Division Map Error: ", sys.exc_info()[0])
 			raise
 		pass
-
+		#
+		# read in the division map
+		#
+		data_frame = excel_file.parse()
+		header = data_frame.columns
+		#
+		# first, check to make sure that all of the required columns are present in the file
+		#
 		all_good = True
-		row_num = 0
-		for row in dmap_ws:
-			if (row_num == 0):
-				col_num = 0
-				for cell in row:
-					for key in self.required_columns.keys():
-						if (cell == key):
-							self.required_columns[key] = col_num
-						pass
-					col_num = col_num + 1
-				pass
-				for key in self.required_columns.keys():
-					if (self.required_columns[key] == -1):
-						all_good = False
-					pass
-				pass
-				if (all_good == False):
-					raise ValueError('All required columns MUST be included in the Division Map file!')
-				pass
-			else:
-				dm_region   = int(row[self.required_columns['region']])
-				dm_division = int(row[self.required_columns['division']])
-				dm_name     = "%s" % row[self.required_columns['name']]
-				dm_name		= dm_name.replace(" ", "_")
-				dm_rid		= "%s" % row[self.required_columns['RID']]
-				div_fid		= self.get_file_id(dm_region, dm_division)
-				reg_fid		= self.get_file_id(dm_region, 0)
-#				print("Mapping ID %02d%02d to %s Region %s Division" % (dm_region, dm_division, dm_rid, dm_name))
-				if (dm_division == 0):
-					self.region_map[reg_fid] = dm_name
-					self.region_ids[reg_fid] = dm_rid
-				pass
-				self.division_map[div_fid] = dm_name
+		for name in self.required_columns:
+			if not (name.lower() in [x.lower() for x in header]):
+				all_good = False
 			pass
-			row_num = row_num + 1		
+		pass
+		if (all_good == False):
+			raise ValueError('All required columns MUST be included in the Division Map file!')
+		pass
+		for row, data in data_frame.iterrows():
+			dm_region   = int(data['region'])
+			dm_division = int(data['division'])
+			dm_name     = "%s" % data['name']
+			dm_name		= dm_name.replace(" ", "_")
+			dm_rid		= "%s" % data['RID']
+			div_fid		= self.get_file_id(dm_region, dm_division)
+			reg_fid		= self.get_file_id(dm_region, 0)
+#			print("Mapping ID %02d%02d to %s Region %s Division" % (dm_region, dm_division, dm_rid, dm_name))
+			if (dm_division == 0):
+				self.region_map[reg_fid] = dm_name
+				self.region_ids[reg_fid] = dm_rid
+			pass
+			self.division_map[div_fid] = dm_name
 		pass
 	pass
 pass

@@ -79,6 +79,7 @@
 # v0.4		Addressed more Excel dates showing up in the wrong format in the
 #			output files.
 # v0.8		Fixed bugs in zip file creation
+# v0.9		Updated to NMRA 2023 database format
 ###############################################################################
 ###############################################################################
 import sys
@@ -87,16 +88,16 @@ import argparse
 import re
 import glob
 import string
+import gc
 #
-# These are for manipulating the NMRA spreadsheet reports in .xls format
+# These are for manipulating the NMRA spreadsheet reports in .xls/.xlsx format
 #
-#import xlrd
-import xlwt
-#
-# These are for manipulating the config files in .xlsx format
-#
+import xlrd
 import pyexcel
-import pyexcel_xlsx
+#
+# These are for manipulating the config files in .xlsx/.csv format
+#
+import pandas as pd
 #
 # Used to manage the NMRA zip file and to package up the output files
 #
@@ -109,9 +110,11 @@ import zipfile
 ###############################################################################
 import DivisionMap
 import MemberReassignments
-import MemberInfo
+import NewsletterFile
+import CopyFile
 import RosterFile
 import EmailDistribution
+import NMRAMembersConfig
 #------------------------------------------------------------------------------
 #
 # Define the namespace for arguments in parse_args
@@ -166,13 +169,57 @@ def zip_directory(filename, directory, ziponly=False):
 			for dirname, subdirs, files in os.walk(directory):
 				zip_ref.write(dirname)
 				for fname in files:
-					print('\t%s' % fname)
+					print('\t%s/%s' % (dirname, fname))
 					zip_ref.write(os.path.join(dirname, fname))
 				pass
 			pass
 		pass
 	pass
 	print('\n')
+pass
+#------------------------------------------------------------------------------
+#
+# Legacy roster files are .xls format, newer roster files are .xlsx format
+#
+# NOTE: Warnings about OLE2 and file sizes are expected--these are caused by 
+# the really old version of Excel these NMRA files are saved in...
+#------------------------------------------------------------------------------
+def convert_legacy_roster_files(roster_file_dir):
+	print("Converting older Excel files to XLSX format for processing...")
+	for roster_file in glob.glob("%s/*.xls" % (roster_file_dir)):
+		(xlsbase, xlsext) = os.path.splitext(roster_file)
+		xlsxfile = "%s.%s" % (xlsbase, input_format)
+		print("\tConverting %s to %s...\n" % (roster_file, xlsxfile))
+		wb = xlrd.open_workbook(filename=file_name, encoding_override="cp1252", formatting_info = True)
+		sh = wb.sheet_by_index(0)
+		sheet = pyexcel.Sheet(name=sh.name)
+		zipcol=0
+		for r in sh.row_range():
+			row_data = []
+			for c in sh.column_range():
+				if (r > 0):
+					cell_type = sh.cell_type(r,c)
+					if (cell_type == 1):
+						year, month, day, hour, minute, second = xlrd.xldate_as_tuple(sh.cell_value(r,c),0)
+						cell_date = "%02d/%02d/%04d" % (month, day, year)
+					elif (c == zipcol):
+						cell_data = "%05d" % (int(sh.cell_value(r,c)))
+					else:
+						cell_data = sh.cell_value(r,c)
+					pass
+				else:
+					if (zipcol == 0):
+						if (sh.cell_value(r,c) == "zip"):
+							zipcol = c
+						pass
+					pass
+				pass
+			row_data.append(cell_data)
+			pass
+			sheet.row += row_data
+		pass
+		sheet.save_as(xlsxfile)
+	pass
 pass
 ###############################################################################
 ###############################################################################
@@ -187,15 +234,16 @@ def main():
 # Create the program argument definitions
 #
 #------------------------------------------------------------------------------
-	program_version = "v0.8"
+	program_version = "v2.0"
+	default_config_file=['./config/NMRAMembersConfig.xml']
 	default_reassignment_file=['./config/NMRA_Division_Reassignments.xlsx']
 	default_map_file=['./config/NMRA_Region_Division_Map.xlsx']
 	default_email_file=['./config/NMRA_Email_Distribution_List.xlsx']
 	default_work_dir=['work']
 	default_dist_dir=['release']
 	default_distribute=False
-	default_long=False
 	default_override_email=False
+	default_legacy_mode=False
 
 	parser = argparse.ArgumentParser(
 		description='This program processes the NMRA roster files from the NMRA .zip file and outputs a directory with the roster .zip files for each division and region found with the members reassigned to their desired divsions as specified in the division reassignment file (-r option)\nSince the NMRA roster files use numerical identifiers for each region and division, this script uses a mapping file (-m option)'
@@ -205,6 +253,14 @@ def main():
 		metavar='nmra_zip_file',
 		nargs=1,
 		help='The NMRA ZIP file containing the monthly roster to be processed'
+		)
+	parser.add_argument(
+		'-c', '--config',
+		metavar='config',
+		nargs=1,
+		default=default_config_file,
+		required=False,
+		help="Filename of the XML configuration file (default: %s)" % (default_config_file)
 		)
 	parser.add_argument(
 		'-r', '--reassign',
@@ -247,13 +303,6 @@ def main():
 		help="Name of the directory where all of the final output files go (default: %s)" % (default_dist_dir)
 		)
 	parser.add_argument(
-		'-l', '--long_dir_names',
-		action="store_true",
-		default=default_long,
-		required=False,
-		help="Use full-length names for the region/division directories instead of a shorter version (default: %s)" % (default_long)
-		)
-	parser.add_argument(
 		'-s', '--send_email',
 		action="store_true",
 		default=default_distribute,
@@ -267,14 +316,21 @@ def main():
 		required=False,
 		help="Force the override of the email address in the config file in place of the NMRA email address (default: %s)" % (default_override_email)
 		)
+	parser.add_argument(
+		'-g', '--legacy',
+		action="store_true",
+		default=default_legacy_mode,
+		required=False,
+		help="Process older legacy roster files (default: %s)" % (default_legacy_mode)
+		)
 #------------------------------------------------------------------------------
 #
 # Start
 #
 #------------------------------------------------------------------------------
-	print("\nNMRA Roster ZIP File Processing Program")
+	print("\nNMRA Roster ZIP/Spreadsheet File Processing Program")
 	print("by Erich Whitney")
-	print("Copyright (c) 2019-2021 HomeBrew Engineering")
+	print("Copyright (c) 2019-2024 BlackCat Engineering")
 	print("Version %s" % program_version)
 	print("")
 	#
@@ -284,16 +340,28 @@ def main():
 	zip_file = myargs.nmra_zip_file[0]
 	zip_temp = os.path.splitext(os.path.basename(zip_file))
 	zip_name = zip_temp[0]
-	use_long = myargs.long_dir_names
 	
 	work_dir = myargs.work_dir[0]
 	dist_dir = "%s/%s" % (myargs.dist_dir[0], zip_name)
+	config_file = myargs.config[0]
 	reassign_file = myargs.reassign[0]
 	map_file = myargs.map_file[0]
 	unzip_dir = "%s/%s" % (myargs.work_dir[0], zip_name)
 	email_file = myargs.email_file[0]
 	send_email = myargs.send_email
 	force_override = myargs.force_override_email
+	legacy_mode = myargs.legacy
+	#
+	# Read the XML configuration file
+	#
+	mode = 'nmra-xlsx'
+	if (legacy_mode):
+		mode = 'nmra-xls'
+	pass
+	config = NMRAMembersConfig.NMRAMembersConfig(config_file, mode)
+	action_list = config.get_action_list()
+	input_format = config.get_input_format()
+	output_format = config.get_output_format()
 	#
 	# process map file
 	#
@@ -314,29 +382,175 @@ def main():
 	#
 	os.makedirs("%s" % work_dir, exist_ok=True)
 	os.makedirs("%s" % dist_dir, exist_ok=True)
+	#---------------------------------------------------------------------------------------------
 	#
 	# expand the NMRA zip file into the working directory
 	#
+	#---------------------------------------------------------------------------------------------
 	print("\nExpanding the NMRA ZIP file...")
 	expand_zip_file(zip_file, work_dir)
 	(zip_filename, zip_ext) = os.path.splitext(os.path.basename(zip_file))
 	roster_file_dir = "%s/%s" % (work_dir, zip_name)
-	
+	#---------------------------------------------------------------------------------------------
+	#
+	# Check the unzipped files and make sure all if the input files exist.
+	# Also, determine the region from the unzipped filenames.
+	#
+	#---------------------------------------------------------------------------------------------
+	re1 = re.compile(r'^(\d+)_(.*)') # parses the regionID_filename from a filename
+	region = 0
+	region_ok = False
+	for xfile in glob.glob("%s/*.%s" % (roster_file_dir, input_format)):
+		xfile1 = os.path.basename(xfile)
+		result = re1.split(xfile1)
+		if (len(result) > 1):
+			reg = int(result[1])
+			if (region == 0):
+				region = reg
+				region_ok = True
+			elif (reg != region):
+				region_ok = False
+				print("Error: Source file region mismatch (%d <=> %d" % (region, reg))
+			pass
+		pass
+	pass
+	file_id = nmra_map.get_file_id(region, 0)
+	print("Processing NMRA files for the %s Region (NMRA Region ID %d)..." % (nmra_map.get_region_id(file_id), region))
+	#---------------------------------------------------------------------------------------------
+	#
+	# At this point, the NMRA ZIP file has been expanded into the work directory and all of the
+	# files are in a subdirectory that was named the same name as the ZIP filename
+	#
+	#---------------------------------------------------------------------------------------------
+	#
+	# If it's the file format we need to convert to xlsx format
+	#
+	if (legacy_mode):
+		convert_legacy_roster_files(roster_file_dir)
+	pass
+	#---------------------------------------------------------------------------------------------
+	#
+	# At this point if we are in legacy mode, there will be dupicates of all the spreadsheets
+	# in the work directory, the original spreadsheets and a copy saved in XLSX format for further
+	# processing below...
+	#
+	#---------------------------------------------------------------------------------------------
 	#
 	# Create the division and region lists
 	#
 	parent_dir = os.getcwd()
-	print("\nProcessing NMRA Roster Files...")
-	print("NOTE: Warnings about OLE2 and file sizes are expected--these are caused by the really old version of Excel these NMRA files are saved in...")
-	roster_files = glob.glob("%s/*.xls" % (roster_file_dir))
-	for roster_file in roster_files:
-		print("\tProcessing NMRA Roster file: %s" % roster_file)
-		rf = RosterFile.RosterFile(unzip_dir, nmra_map, use_long, reassignments)
-		rf.read_file(roster_file)
-		rf.process(email_distribution, parent_dir, dist_dir, zip_filename, force_override)
+	#
+	# This regular expression parses filenames that come from HQ in the format regionID_filename.ext
+	#
+	re2 = re.compile(r'^(\d+)_(.+)\.(.+)')
+	#
+	# Work through all of the file actions
+	#
+	instance_count = {}	# keep track of how many different times each roster file is used
+	#
+	# Only process files identified in the XML config file
+#
+	#
+	# The Newsletter action is for the region newsletter mailing lists, new member and deceased member reports
+	#
+	all_recipients = {}
+	for action in action_list:
+		config_files = config.get_files(action)
+		if (len(config_files) > 0):
+			roster_files = []
+			#
+			# Map the filename from the XML to the name that should be found in the unzipped archive
+			#
+			for config_file in config_files:
+				config_filename = "%s/%d_%s.%s" % (roster_file_dir, region, config_file, input_format)
+				if config_file in instance_count.keys():
+					instance_count[config_file] += 1
+				else:
+					instance_count[config_file] = 1
+				pass
+				print("Processing %s (%d)..." % (config_filename, instance_count[config_file]))
+				roster_file = config_file
+				roster_filename = config_filename
+				#
+				# get a list of the actual files found from the unzipped archive
+				#
+				files = glob.glob(config_filename)
+				#
+				# process each file based on the actions for that are defined
+				#
+				if config_filename in files:
+					print("Performing %s Action..." % (action.upper()))
+					if (action == 'newsletter'):
+						enable_reassignment = False
+#						print("****Processing Newsletter File: %s, Instance %d" % (roster_filename, instance_count[config_file]))
+						nf = NewsletterFile.NewsletterFile(roster_file, instance_count[config_file], unzip_dir, region, config, nmra_map)
+						nf.read_file(roster_filename)
+						nf_recipients = nf.process(parent_dir)
+						if (not config_filename in all_recipients.keys() ):
+							all_recipients.update({config_filename : {action : [nf_recipients]}})
+						else:
+							current = all_recipients[config_filename]
+							if (not action in current.keys()):
+								all_recipients.update({config_filename : {action : [nf_recipients]}})
+							else:
+								all_recipients[config_filename].get(action).append(nf_recipients)
+							pass
+						pass
+#						del nf
+						print("---------------------------------------------------------")
+					#
+					# The Copy action is for any files that just get copied without any member reassignment action
+					#
+					elif (action == 'copy'):
+						enable_reassignment = False
+						print("\tCopying NMRA Roster file: %s" % (roster_file))
+						cp = CopyFile.CopyFile()
+						cp_recipients = cp.process(roster_file, instance_count[config_file], roster_filename, parent_dir, unzip_dir, input_format, output_format, region, config, nmra_map)
+						if (not config_filename in all_recipients.keys()):
+							all_recipients.update({config_filename : {action : [cp_recipients]}})
+						else:
+							current = all_recipients[config_filename]
+							if (not action in current.keys()):
+								all_recipients.update({config_filename : {action : [nf_recipients]}})
+							else:
+								all_recipients[config_filename].get(action).append(cp_recipients)
+							pass
+						pass
+#						del cp
+						print("---------------------------------------------------------")
+					#
+					# The Reassignment action is for region and division roster files where we have to correct member division assignments based
+					# on the reassignments table provided in the NMRE_Division_Reassignments.xlsx spreadsheet
+					#
+					elif (action == 'reassignment'):
+						enable_reassignment = True
+						print("\tProcessing NMRA Roster file: %s" % (roster_file))
+						rf = RosterFile.RosterFile(roster_file, instance_count[config_file], enable_reassignment, unzip_dir, region, config, nmra_map, reassignments, legacy_mode)
+						rf.read_file(roster_filename, legacy_mode)
+						rf_recipients = rf.process(email_distribution, parent_dir, dist_dir, zip_filename, force_override, legacy_mode)
+						if (not config_filename in all_recipients.keys()):
+							all_recipients.update({config_filename : {action : [rf_recipients]}})
+						else:
+							current = all_recipients[config_filename]
+							if (not action in current.keys()):
+								all_recipients.update({config_filename : {action : [rf_recipients]}})
+							else:
+								all_recipients[config_filename].get(action).append(rf_recipients)
+							pass
+						pass
+#						del rf
+						print("---------------------------------------------------------")
+					pass
+				else:
+					print("\tSkipping NMRA Roster file: %s (it wasn't in the NMRA .zip file)" % (roster_file))
+				pass
+			pass
+			gc.collect()
+		pass
 	pass
 	#
-	# Zip up the output directories
+	# Now that all of the files are processed in the working directory
+	# Zip them up to their respective release output directories
 	#
 	processed_files=[]
 	print("Creating .zip files for each Region/Division...")
@@ -356,8 +570,9 @@ def main():
 			processed_files.append(zip_file_name)
 		pass
 	pass
+	print("---------------------------------------------------------")
 	#
-	# Zip up all of the files
+	# This creates one Zip of all of the files to archive the entire monthly report
 	#
 	print("Creating a .zip file of all of the individual Region/Division .zip files...")
 	os.chdir(parent_dir)
@@ -367,8 +582,9 @@ def main():
 	full_zip_file_name = "%s/%s/%s_processed.zip" % (parent_dir, myargs.dist_dir[0], zip_filename)
 	print("\nCreating a complete zip file of %s in: %s" % (zip_name, full_zip_file_name))
 	zip_directory(full_zip_file_name, zip_name, True)
+	print("---------------------------------------------------------")
 	#
-	# Email the zip files to the distribution list
+	# Distribute the zip files to the distribution list
 	#
 	os.chdir(parent_dir)
 	if (send_email):
@@ -376,8 +592,31 @@ def main():
 		email_distribution.send_emails(zip_filename)
 	else:
 		print("Skipping email distribution")
+		print("")
+		print("Here's the steps that need to be done manually...")
+		email_distribution.print_email_list()
 	pass
-
+	print("---------------------------------------------------------")
+	print("")
+	print("Files to be sent to these recipients:")
+	for cfg in all_recipients.keys():
+#		print("File: %s" % (cfg))
+		next1 = all_recipients.get(cfg)
+		for action in next1.keys():
+#			print("\t%s" % (action))
+			next2 = next1.get(action)
+			for data in next2:
+				for recip, file_list in data.items():
+					print("\t%s" % (recip))
+					for file in file_list:
+						print("\t\t%s" % (file))
+					pass
+				pass
+			pass
+		pass
+	pass
+	print("---------------------------------------------------------")
+	print("")
 	print("\nDone.\n")
 pass
 #

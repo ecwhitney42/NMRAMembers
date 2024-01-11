@@ -40,7 +40,7 @@ class EmailDistribution:
 	def __init__(self):
 		self.distribution_list = []
 		self.distribution_worksheet = "Email Distribution"
-		self.required_distribution_columns = {'id' : -1, 'region' : -1, 'division' : -1, 'lname' : -1, 'fname' : -1, 'email_address' : -1, 'file' : -1}
+		self.required_distribution_columns = {'id' : -1, 'region' : -1, 'division' : -1, 'lname' : -1, 'fname' : -1, 'email_address' : -1, 'category' : -1, 'file' : -1, 'notes' : -1}
 		self.settings_worksheet = "Email Settings"
 		self.required_settings_columns = {'email_sender' : -1, 'email_bcc' : -1, 'email_smtp_address' : -1}
 		
@@ -51,9 +51,9 @@ class EmailDistribution:
 	#
 	# Add a member to the distribution list
 	#
-	def add_recipient(self, nmra_id, region, division, lname, fname, email, file):
-		if nmra_id and (region != 0) and (division != 0) and lname and fname and email and file:
-			self.distribution_list.append({'nmra_id' : nmra_id, 'region' : region, 'division' : division, 'lname' : lname, 'fname' : fname, 'email' : email, 'file' : file, 'zip_file' : "n/a", 'location' : "Unknown Division", 'valid_member' : False, 'valid_email' : False})
+	def add_recipient(self, nmra_id, region, division, lname, category, fname, email, file, notes):
+		if nmra_id and (region != 0) and (division != 0) and lname and fname and email and category:
+			self.distribution_list.append({'nmra_id' : nmra_id, 'region' : region, 'division' : division, 'lname' : lname, 'fname' : fname, 'email' : email, 'category' : category, 'file' : file, 'notes' : notes, 'zip_file' : "n/a", 'location' : "Unknown Division", 'valid_member' : False, 'valid_email' : False})
 		else:
 			print("Warning: Recipient entry is incomplete, recipient not added.")
 		pass
@@ -61,54 +61,63 @@ class EmailDistribution:
 	#
 	# Add a member to the distribution list
 	#
-	def validate_recipient(self, use_long, nmra_map, parent_dir, dist_dir, zip_filename, nmra_id, region, division, lname, fname, email, force_override):
-		for recipient in self.distribution_list:
-			if (recipient['nmra_id'] == nmra_id) and (recipient['region'] == region) and (recipient['division'] == division) and (recipient['lname'] == lname) and (recipient['fname'] == fname):
-				reg_id = recipient['region']
-				div_id = recipient['division']
+	def validate_recipient(self, nmra_map, parent_dir, dist_dir, zip_filename, nmra_id, region, division, lname, fname, email, force_override):
+		for x in range(0, len(self.distribution_list)):
+			try:
+				reg_id = self.distribution_list[x].get('region')
+			except ValueError:
+				print("Unknown region error in the email distribution list")
+			pass
+			try:
+				div_id = self.distribution_list[x].get('division')
+			except ValueError:
+				print ("Unknown division error in the email distribution list")
+			pass
 
-				reg_fid = nmra_map.get_file_id(reg_id, 0)
-				div_fid = nmra_map.get_file_id(reg_id, div_id)
+			reg_fid = nmra_map.get_file_id(reg_id, 0)
+			div_fid = nmra_map.get_file_id(reg_id, div_id)
 
-				if use_long:
-					reg_name = nmra_map.get_region(reg_fid)
-				else:
-					reg_name = nmra_map.get_region_id(reg_fid)
-				pass
-				div_name = nmra_map.get_division(div_fid)
-				if (not reg_name or not div_name):
-					location = "Unknown Division"
-				else:
-					location = "%s %s Division" % (reg_name, div_name)
-				pass
-				recipient['location'] = location
-				recipient['valid_member'] = True
-				if (recipient['email'] == email or force_override):
-					recipient['valid_email'] = True
+			reg_name = nmra_map.get_region(reg_fid)
+			div_name = nmra_map.get_division(div_fid)
+			
+			list_div_name = nmra_map.get_division(nmra_map.get_file_id(reg_id, division))
+
+			if (self.distribution_list[x].get('nmra_id') == nmra_id) and (self.distribution_list[x].get('region') == region) and (self.distribution_list[x].get('lname') == lname) and (self.distribution_list[x].get('fname') == fname):
+				location = "%s %s Division" % (reg_name, div_name)
+				self.distribution_list[x].update({'location' : location})
+				self.distribution_list[x].update({'valid_member' : True})
+				if (((self.distribution_list[x].get('email') == email) and (self.distribution_list[x].get('division') == division)) or (force_override and ((self.distribution_list[x].get('email') != email) or (self.distribution_list[x].get('division') != division)))):
+					self.distribution_list[x].update({'valid_email' : True})
 					#
 					# NMRA = zip file of the entire directory of the processed results
 					# REGION = just the zip file of the region informaiton
 					# DIVISION = just the zip file of the divsion information
 					# filename.zip = explicitly send the zip file with the name filename.zip in the release directory
 					#
-					if (recipient['file'] == "NMRA"):
+					if (self.distribution_list[x].get('category') == "NMRA"):
 						zip_file = "%s/%s/../%s_processed.zip" % (parent_dir, dist_dir, zip_filename)
-					elif (recipient['file'] == "REGION"):
+					elif (self.distribution_list[x].get('category') == "REGION"):
 						zip_file = "%s/%s/%s_Region.zip" % (parent_dir, dist_dir, reg_name)
-					elif (recipient['file'] == "DIVISION"):
+					elif (self.distribution_list[x].get('category') == "DIVISION"):
 						zip_file = "%s/%s/%s_Region-%s_Division.zip" % (parent_dir, dist_dir, reg_name, div_name)
-					else:
-						zip_file = "%s/%s/%s" % (parent_dir, dist_dir, recipient['file'])
+					elif (self.distribution_list[x].get('category') == "PRINTER"):
+						zip_file = "%s/%s/%s_Region_Printer.zip" % (parent_dir, dist_dir, reg_name)
+					elif (self.distribution_list[x].get('category') == "EDITOR"):
+						zip_file = "%s/%s/%s_Region_Editor.zip" % (parent_dir, dist_dir, reg_name)
+					elif (self.distribution_list[x].get('category') == "FILE"):
+						zip_file = "%s/%s/%s" % (parent_dir, dist_dir, self.distribution_list[x].get('file'))
 					pass
-					recipient['zip_file'] = zip_file
-					if (force_override):
-						print("\tWarning: Email recipient %s %s, NMRA ID: %s, from %s %s Division, their email (%s) doesn't match what the NMRA has (%s)" % (fname, lname, nmra_id, reg_name, div_name, recipient['email'], email))
+					self.distribution_list[x].update({'zip_file' : zip_file})
+					if (force_override and ((self.distribution_list[x].get('email') != email) or (self.distribution_list[x].get('division') != division))):
+						print("\tWarning: Email recipient %s %s, NMRA ID: %s, from %s %s Division, their email (%s) doesn't match what the NMRA has (%s) for %s %s Division" % (fname, lname, nmra_id, reg_name, list_div_name, self.distribution_list[x].get('email'), email, reg_name, div_name))
 					else:
-						print("\tEmail recipient %s %s, NMRA ID: %s, from %s %s Division, email (%s) will receive %s" % (fname, lname, nmra_id, reg_name, div_name, email, zip_file))
+						short_zip_file = os.path.basename(zip_file)
+						print("\tValidated Email recipient %s %s, NMRA ID: %s, from %s %s Division, email (%s) will receive %s" % (fname, lname, nmra_id, reg_name, div_name, email, short_zip_file))
+					pass
 				else:
-					print("\tWarning: Email recipient %s %s, NMRA ID: %s, from %s %s Division, their email (%s) doesn't match what the NMRA has (%s)" % (fname, lname, nmra_id, reg_name, div_name, recipient['email'], email))
+					print("\tWarning: Email recipient %s %s, NMRA ID: %s, from %s %s Division, their email (%s) doesn't match what the NMRA has (%s) for %s %s Division" % (fname, lname, nmra_id, reg_name, div_name, self.distribution_list[x].get('email'), email, reg_name, div_name))
 					print("\tWarning: NOT sending email to this recipient, use the -f option to override unrecognized email addresses!")
-					recipient['valid_email'] = False
+					self.distribution_list[x].update({'valid_email' : False})
 				pass
 			pass
 		pass
@@ -117,7 +126,7 @@ class EmailDistribution:
 	# is a recipient a valid NMRA member
 	#
 	def is_recipient_valid_member(self, recipient):
-		if (recipient['valid_member']):
+		if (recipient.get('valid_member')):
 			return True
 		else:
 			return False
@@ -127,7 +136,7 @@ class EmailDistribution:
 	# does recipient have a valid NMRA email
 	#
 	def is_recipient_valid_email(self, recipient):
-		if (recipient['valid_email']):
+		if (recipient.get('valid_email')):
 			return True
 		else:
 			return False
@@ -141,7 +150,7 @@ class EmailDistribution:
 		try:
 			distribution_wb = pyexcel.get_book(file_name=filename)
 			distribution_ws = distribution_wb[self.distribution_worksheet]
-			settings_ws = distribution_wb[self.settings_worksheet]
+			settings_ws = distribution_wb[	self.settings_worksheet]
 		except:
 			print("Email Distribution Spreadsheet Error: ", sys.exc_info()[0])
 			raise
@@ -217,20 +226,45 @@ class EmailDistribution:
 			#
 			else:
 				r_id       = "%s" % row[self.required_distribution_columns['id']]
-				r_region   =    int(row[self.required_distribution_columns['region']])
-				r_division =    int(row[self.required_distribution_columns['division']])
-				r_lname    = "%s" % row[self.required_distribution_columns['lname']]
-				r_fname    = "%s" % row[self.required_distribution_columns['fname']]
-				r_email    = "%s" % row[self.required_distribution_columns['email_address']]
-				r_file 	   = "%s" % row[self.required_distribution_columns['file']]
 				if (r_id.startswith('#')):
-					print("Skipping NMRA Member %s %s (ID %s) email %s, file: %s" % (r_fname, r_lname, r_id, r_email, r_file))
+					print("Skipping comment: %s" % (row))
 				else:
-					print("NMRA Member %s %s (ID %s) email to %s with file: %s" % (r_fname, r_lname, r_id, r_email, r_file))
-					self.add_recipient(r_id, r_region, r_division, r_lname, r_fname, r_email, r_file)
+					r_region   =    int(row[self.required_distribution_columns['region']])
+					r_division =    int(row[self.required_distribution_columns['division']])
+					r_lname    = "%s" % row[self.required_distribution_columns['lname']]
+					r_fname    = "%s" % row[self.required_distribution_columns['fname']]
+					r_email    = "%s" % row[self.required_distribution_columns['email_address']]
+					r_category = "%s" % row[self.required_distribution_columns['category']]
+					r_file 	   = "%s" % row[self.required_distribution_columns['file']]
+					r_notes	   = "%s" % row[self.required_distribution_columns['notes']]
+					print("NMRA Member %s %s (ID %s) email to %s category %s with file: %s, notes: %s" % (r_fname, r_lname, r_id, r_email, r_category, r_file, r_notes))
+					self.add_recipient(r_id, r_region, r_division, r_lname, r_category, r_fname, r_email, r_file, r_notes)
 				pass
 			pass
 			row_num = row_num + 1	
+		pass
+	pass
+	#
+	# print email list
+	#
+	def print_email_list(self):
+		print("Send the following emails:")
+		print("")
+		for recipient in self.distribution_list:
+			sendfile	      = recipient.get('zip_file')
+			filename	  	  = os.path.basename(sendfile)
+			receiver_fname	  = recipient.get('fname')
+			receiver_lname	  = recipient.get('lname')
+			receiver_email	  = recipient.get('email')
+			valid_email		  = recipient.get('valid_email')
+			bcc_email		  = self.sender_bcc
+			if (valid_email):
+				valid_string = 'Y'
+			else:
+				valid_string = 'N'
+			pass
+			print("%-30s (%s) %-30s %s" % ("%s %s" % (receiver_fname, receiver_lname), valid_string, receiver_email, filename))
+#			print("%s" % recipient)	
 		pass
 	pass
 	#
@@ -241,13 +275,14 @@ class EmailDistribution:
 		#
 		# Pull out the required information
 		#
-		sendfile	      = recipient['zip_file']
+		sendfile	      = recipient.get('zip_file')
 		filename	  	  = os.path.basename(sendfile)
-		receiver_fname	  = recipient['fname']
-		receiver_lname	  = recipient['lname']
-		receiver_location = recipient['location']
+		receiver_fname	  = recipient.get('fname')
+		receiver_lname	  = recipient.get('lname')
+		receiver_location = recipient.get('location')
+		receiver_notes	  = recipient.get('notes')
 		sender_email	  = self.sender_email
-		receiver_email	  = recipient['email']
+		receiver_email	  = recipient.get('email')
 		bcc_email		  = self.sender_bcc
 		smtp_address	  = self.smtp_address
 		print("\tSending NMRA Roster from %s %s to %s %s from %s, to email %s..." % (name, filename, receiver_fname, receiver_lname, receiver_location, receiver_email))
@@ -257,7 +292,9 @@ class EmailDistribution:
 		#
 		#-------------------------------------------------------
 		subject = "NMRA Roster File (%s): %s" % (name, filename)
-		body = "Hello %s,\n\nPlease find the attached NMRA roster file %s from the NMRA distribution for %s\n\nPlease reply to this message if you are no longer the proper recipient of this information.\n\n" % (receiver_fname, filename, name)
+		body = 		  "Hello %s,\n\nPlease find the attached NMRA roster file %s from the NMRA distribution for %s\n\n" % (receiver_fname, filename, name)
+		body = body + "You are receiving this NMRA roster for: %s\n\n" % (receiver_notes)
+		body = body + "Please reply to this message if you are no longer the proper recipient of this information.\n\n"
 		#-------------------------------------------------------
 		#
 		# Create a multipart message and set headers
@@ -303,7 +340,7 @@ class EmailDistribution:
 		#
 		#-------------------------------------------------------
 		try:	
-			smtpObj = smtplib.SMTP(smtp_address)      
+			smtpObj = smtplib.SMTP(smtp_address)
 			smtpObj.sendmail(sender_email, receiver_email, text)        
 		except smtplib.SMTPException:                          
 			print("\tError: unable to send email")                
@@ -319,10 +356,10 @@ class EmailDistribution:
 				if (self.is_recipient_valid_email(recipient)):
 					self.send_email(recipient, name)
 				else:
-					print("\tWarning: Recipient NMRA %s %s (ID %s) %s does not have a valid NMRA EMail address! Their email address does not match what is on file!" % (recipient['fname'], recipient['lname'], recipient['nmra_id'], recipient['location']))
+					print("\tWarning: Recipient NMRA %s %s (ID %s) %s does not have a valid NMRA EMail address! Their email address does not match what is on file!" % (recipient.get('fname'), recipient.get('lname'), recipient.get('nmra_id'), recipient.get('location')))
 				pass
 			else:
-				print("\tWarning: Recipient NMRA %s %s (ID %s) %s is not a valid NMRA Member! They were not found in %s.zip. No email sent." % (recipient['fname'], recipient['lname'], recipient['nmra_id'], recipient['location'], name))
+				print("\tWarning: Recipient NMRA %s %s (ID %s) %s is not a valid NMRA Member! They were not found in %s.zip. No email sent." % (recipient.get('fname'), recipient.get('lname'), recipient.get('nmra_id'), recipient.get('location'), name))
 			pass
 		pass
 	pass
