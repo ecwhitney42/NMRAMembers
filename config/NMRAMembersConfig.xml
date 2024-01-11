@@ -1,0 +1,164 @@
+<?xml version="1.0"?>
+<config>
+    <nmra-xlsx>
+        <definitions>
+            <parameter name="recipient" value="printer"      description="Mailing list data sent to the regional newsletter printer."/>
+            <parameter name="recipient" value="region"       description="Reports sent to the regional leadership."/>
+            <parameter name="recipient" value="editor"       description="Reports sent to the regional newsletter editor."/>
+            <parameter name="recipient" value="division"     description="Reports sent to each division."/>
+            <parameter name="action"    value="newsletter"   description="Create the regional newsletter mailiing list."/>
+            <parameter name="action"    value="copy"         description="Copy the file to the recipient without altering."/>
+            <parameter name="action"    value="reassignment" description="Copy the file to the recipient after applying the member division reassignment algorithm."/>
+            <parameter name="iformat"   value="xlsx"         description="Input file format."/>
+            <parameter name="oformat"   value="csv"          description="Output file format."/>
+            <parameter name="date_format"   value="%m/%d/%y"     description="Output date format used when writing out the CSV files."/>
+        </definitions>
+        <reports>
+            <newsletter>
+                <file name="RegionNewsletterSubscriptionReport">
+                    <recipient>printer</recipient>
+                    <recipient>editor</recipient>
+                    <fields>"title,lname,fname,mname,Organization,address1,address2,city,State,zip,plus4,Division"</fields>
+                    <format>"title,fname,mname,lname,address1,address2,city,State,zip-plus4"</format>
+                    <sort>zip-plus4</sort>
+                    <output name="CouplerUSMailingList"/>
+                </file>
+<!--
+                <file name="MonthlyMemberRosterReport">
+                    <recipient>editor</recipient>
+                    <fields>"title,lname,fname,mname,Organization,address1,address2,city,State,zip,country"</fields>
+                    <format>"title,fname,mname,lname,address1,address2,city,State,zip"</format>
+                    <sort>zip</sort>
+                    <output name="CouplerCanadaMailingList">
+                        <include>"country=CAN"</include>
+                    </output>
+                </file>
+-->
+                <file name="NewMembersReport">
+                    <recipient>editor</recipient>
+                    <fields>"lname,mname,fname,Organization,State"</fields>
+                    <format>"fname,mname,lname,State"</format>
+                </file>
+                <file name="RegionDeceasedMemberReport">
+                    <recipient>editor</recipient>
+                    <fields>"lname,mname,fname,Organization,State"</fields>
+                    <format>"fname,mname,lname,State"</format>
+                </file>
+            </newsletter>
+            <copy>
+                <file name="RegionOfficersReport">
+                    <recipient>region</recipient>
+                </file>
+            </copy>
+            <reassignment>
+                <file name="30DaysPastDueReport">
+                    <recipient>region</recipient>
+                    <recipient>division</recipient>
+                    <date_fields>"joined,rerail,lastpay,renewed"</date_fields>
+                </file>
+                <file name="60DaysPastDueReport">
+                    <recipient>region</recipient>
+                    <recipient>division</recipient>
+                    <date_fields>"joined,rerail,lastpay,renewed"</date_fields>
+                </file>
+                <file name="NewMembersReport">
+                    <recipient>region</recipient>
+                    <recipient>division</recipient>
+                    <date_fields>"expires,joined,lastpay"</date_fields>
+                </file>
+                <file name="RegionNewSubscriptionsReport">
+                    <recipient>region</recipient>
+<!--                    <recipient>editor</recipient> -->
+                    <date_fields>"expires,subscriptionpaid,subscriptionstart,subscriptionend"</date_fields>
+                </file>
+                <file name="RegionNewSubscriptionByDivisionReport">
+                    <recipient>region</recipient>
+                    <recipient>division</recipient>
+                    <date_fields>"expires,subscriptionpaid,subscriptionstart,subscriptionend"</date_fields>
+                </file>
+                <file name="RenewalsReport">
+                    <recipient>region</recipient>
+                    <recipient>division</recipient>
+                    <date_fields>"expires,joined,rerail,renewed"</date_fields>
+                </file>
+                <file name="MonthlyMemberRosterReport" validate="True">
+                    <recipient>region</recipient>
+                    <recipient>division</recipient>
+                    <date_fields>"expires,joined,rerail,lastpay,renewed"</date_fields>
+                </file>
+                <file name="NMRADeceasedMemberReport">
+                    <recipient>region</recipient>
+                    <recipient>division</recipient>
+                    <date_fields>"expires,joined,rerail,lastpay,renewed"</date_fields>
+                </file>
+                <file name="Inactive,ExpiredOrWithdrawnMembersReport">
+                    <recipient>region</recipient>
+                    <recipient>division</recipient>
+                    <date_fields>"expires,joined,rerail,lastpay,renewed"</date_fields>
+                </file>
+            </reassignment>
+        </reports>
+    </nmra-xlsx>
+    <nmra-xls>
+        <definitions>
+            <parameter name="recipient"     value="region"       description="Reports sent to the regional leadership."/>
+            <parameter name="recipient"     value="editor"       description="Reports sent to the regional newsletter editor."/>
+            <parameter name="recipient"     value="division"     description="Reports sent to each division."/>
+            <parameter name="action"        value="copy"         description="Copy the file to the recipient without altering."/>
+            <parameter name="action"        value="reassignment" description="Copy the file to the recipient after applying the member division reassignment algorithm."/>
+            <parameter name="iformat"       value="xlsx"         description="Input file format."/>
+            <parameter name="oformat"       value="csv"          description="Output file format."/>
+            <parameter name="date_format"   value="%m/%d/%y"     description="Output date format used when writing out the CSV files."/>
+        </definitions>
+        <reports>
+            <reassignment>
+                <file name="30dayspastduereport8">
+                    <recipient>region</recipient>
+                    <recipient>division</recipient>
+                </file>
+                <file name="60dayspastduereport8">
+                    <recipient>region</recipient>
+                    <recipient>division</recipient>
+                </file>
+                <file name="newmembersreport8">
+                    <recipient>region</recipient>
+                    <recipient>division</recipient>
+                </file>
+                <file name="inactive,expiredorwithdrawnmembersreport8">
+                    <recipient>region</recipient>
+                    <recipient>division</recipient>
+                </file>
+                <file name="deceasedmemberreport8">
+                    <recipient>region</recipient>
+                    <recipient>editor</recipient>
+                    <recipient>division</recipient>
+                </file>
+                <file name="renewalsreport8">
+                    <recipient>region</recipient>
+                    <recipient>division</recipient>
+                </file>
+                <file name="boundaryquarterlyrosterreport8">
+                    <recipient>region</recipient>
+                    <recipient>division</recipient>
+                </file>
+                <file name="regionsubscriptionreport8">
+                    <recipient>region</recipient>
+                    <recipient>division</recipient>
+                </file>
+                <file name="quarterlyrosterreport8">
+                    <recipient>region</recipient>
+                    <recipient>division</recipient>
+                </file>
+                <file name="rerailreport8">
+                    <recipient>region</recipient>
+                    <recipient>division</recipient>
+                </file>
+                <file name="changeofaddressreport8">
+                    <recipient>region</recipient>
+                    <recipient>division</recipient>
+                </file>
+            </reassignment>
+        </reports>
+    </nmra-xls>
+</config>
+
