@@ -11,6 +11,12 @@ __pycache__/
 #build covered below in the project-specific directories
 develop-eggs/
 dist/
+work/
+release/
+backup/
+Forms/
+Misc/
+tests/
 downloads/
 eggs/
 .eggs/
