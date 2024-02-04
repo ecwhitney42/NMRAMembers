@@ -4,8 +4,8 @@
 #
 # NMRAMembers.py
 # by Erich Whitney
-# Copyright (c) 2019-2021, HomeBrew Engineering
-# Version 0.8
+# Copyright (c) 2019-202, BlackCat Engineering
+# Version 2.11
 #
 # This program is designed to process the monthly NMRA membership reports sent
 # to the regions by NMRA National. These reports come in the form of a .zip
@@ -80,6 +80,20 @@
 #			output files.
 # v0.8		Fixed bugs in zip file creation
 # v0.9		Updated to NMRA 2023 database format
+# v1.0		Initial working release
+# v2.0		Updated to use Python Pandas in place of older Pyexcel/xlrd/xlwt
+#			legacy libraries.
+# v2.1		Changed FILE to REGIONFILE cateory in the email distibution file.
+#			Fixed bugs with zip codes and dates.
+#			Changed over to using .CSV files for all output files
+#			Added the NER Coupler mailing list and other lists for the
+#			Coupler editor as part of the NER Office Manager job.
+#			Added a master XML configuration file to drive how the monthly
+#			reports are processed.
+#			Currently, this version has not been compiled to binary so it has
+#			only been run directly from Python3.
+# v2.11		Fixed bugs with zipcode and birthyear numerical format issues.
+#			Added AppleScript for email distribution.
 ###############################################################################
 ###############################################################################
 import sys
@@ -89,6 +103,7 @@ import re
 import glob
 import string
 import gc
+import shutil
 #
 # These are for manipulating the NMRA spreadsheet reports in .xls/.xlsx format
 #
@@ -156,26 +171,26 @@ def zip_directory(filename, directory, ziponly=False):
 	except:
 		raise
 	pass
-	print('Opening zip file %s for writing from directory %s...' % (filename, directory))
+#	print('Opening zip file %s for writing from directory %s...' % (filename, directory))
 	with zipfile.ZipFile(filename, "w") as zip_ref:
 		if (ziponly):
-			print('Adding zip files from directory: %s:' % (os.getcwd()))
+#			print('Adding zip files from directory: %s:' % (os.getcwd()))
 			for fname in glob.glob("*.zip"):
-				print('\t%s' % fname)
+#				print('\t%s' % fname)
 				zip_ref.write(fname)
 			pass
 		else:
-			print('Adding roster files from directory: %s:' % (os.getcwd()))
+#			print('Adding roster files from directory: %s:' % (os.getcwd()))
 			for dirname, subdirs, files in os.walk(directory):
 				zip_ref.write(dirname)
 				for fname in files:
-					print('\t%s/%s' % (dirname, fname))
+#					print('\t%s/%s' % (dirname, fname))
 					zip_ref.write(os.path.join(dirname, fname))
 				pass
 			pass
 		pass
 	pass
-	print('\n')
+#	print('\n')
 pass
 #------------------------------------------------------------------------------
 #
@@ -234,7 +249,7 @@ def main():
 # Create the program argument definitions
 #
 #------------------------------------------------------------------------------
-	program_version = "v2.0"
+	program_version = "v2.11"
 	default_config_file=['./config/NMRAMembersConfig.xml']
 	default_reassignment_file=['./config/NMRA_Division_Reassignments.xlsx']
 	default_map_file=['./config/NMRA_Region_Division_Map.xlsx']
@@ -367,16 +382,19 @@ def main():
 	#
 	nmra_map = DivisionMap.DivisionMap()
 	nmra_map.read_file(map_file)
+	print("---------------------------------------------------------")
 	#
 	# process reassignment file
 	#
 	reassignments = MemberReassignments.MemberReassignments()
 	reassignments.read_file(reassign_file)
+	print("---------------------------------------------------------")
 	#
 	# process email distribution file
 	#
 	email_distribution = EmailDistribution.EmailDistribution()
 	email_distribution.read_file(email_file)
+	print("---------------------------------------------------------")
 	#
 	# make sure all of the output directories exists
 	#
@@ -391,6 +409,7 @@ def main():
 	expand_zip_file(zip_file, work_dir)
 	(zip_filename, zip_ext) = os.path.splitext(os.path.basename(zip_file))
 	roster_file_dir = "%s/%s" % (work_dir, zip_name)
+	print("---------------------------------------------------------")
 	#---------------------------------------------------------------------------------------------
 	#
 	# Check the unzipped files and make sure all if the input files exist.
@@ -415,7 +434,8 @@ def main():
 		pass
 	pass
 	file_id = nmra_map.get_file_id(region, 0)
-	print("Processing NMRA files for the %s Region (NMRA Region ID %d)..." % (nmra_map.get_region_id(file_id), region))
+	region_rid = nmra_map.get_region_id(file_id)
+	print("Processing NMRA files for the %s Region (NMRA Region ID %d)..." % (region_rid, region))
 	#---------------------------------------------------------------------------------------------
 	#
 	# At this point, the NMRA ZIP file has been expanded into the work directory and all of the
@@ -468,7 +488,7 @@ def main():
 				else:
 					instance_count[config_file] = 1
 				pass
-				print("Processing %s (%d)..." % (config_filename, instance_count[config_file]))
+				print("\tProcessing %s (%d)..." % (config_filename, instance_count[config_file]))
 				roster_file = config_file
 				roster_filename = config_filename
 				#
@@ -479,7 +499,7 @@ def main():
 				# process each file based on the actions for that are defined
 				#
 				if config_filename in files:
-					print("Performing %s Action..." % (action.upper()))
+					print("\tPerforming %s Action..." % (action.upper()))
 					if (action == 'newsletter'):
 						enable_reassignment = False
 #						print("****Processing Newsletter File: %s, Instance %d" % (roster_filename, instance_count[config_file]))
@@ -503,9 +523,9 @@ def main():
 					#
 					elif (action == 'copy'):
 						enable_reassignment = False
-						print("\tCopying NMRA Roster file: %s" % (roster_file))
+						print("\t\tCopying NMRA Roster file: %s" % (roster_file))
 						cp = CopyFile.CopyFile()
-						cp_recipients = cp.process(roster_file, instance_count[config_file], roster_filename, parent_dir, unzip_dir, input_format, output_format, region, config, nmra_map)
+						cp_recipients = cp.process(roster_file, instance_count[config_file], roster_filename, unzip_dir, output_format, region, config, nmra_map)
 						if (not config_filename in all_recipients.keys()):
 							all_recipients.update({config_filename : {action : [cp_recipients]}})
 						else:
@@ -524,7 +544,7 @@ def main():
 					#
 					elif (action == 'reassignment'):
 						enable_reassignment = True
-						print("\tProcessing NMRA Roster file: %s" % (roster_file))
+						print("\t\tProcessing NMRA Roster file: %s" % (roster_file))
 						rf = RosterFile.RosterFile(roster_file, instance_count[config_file], enable_reassignment, unzip_dir, region, config, nmra_map, reassignments, legacy_mode)
 						rf.read_file(roster_filename, legacy_mode)
 						rf_recipients = rf.process(email_distribution, parent_dir, dist_dir, zip_filename, force_override, legacy_mode)
@@ -549,6 +569,26 @@ def main():
 		pass
 	pass
 	#
+	# Copy any region files over to divisions as necessary
+	#
+	file_list = email_distribution.get_file_list()
+	if (len(file_list) > 0):
+		print("\nCopying individual region files to divisions per the email distribution list requests...")
+		print("-------------------------------------------------------------------------------------------")
+	pass
+	for entry in file_list:
+		for div_fid, filename in entry.items():
+			div_name = nmra_map.get_division(div_fid)
+			source_path = "%s/%s_Region/%s" % (unzip_dir, region_rid, filename)
+			dest_path   = "%s/%s_Region-%s_Division/%s_Region_%s" % (unzip_dir, region_rid, div_name, region_rid, filename)
+			print("\tCopying Region File %-30s to: %s" % (filename, dest_path))
+			shutil.copyfile(source_path, dest_path)
+		pass
+	pass
+	if (len(file_list) > 0):
+		print("-------------------------------------------------------------------------------------------\n")
+	pass
+	#
 	# Now that all of the files are processed in the working directory
 	# Zip them up to their respective release output directories
 	#
@@ -556,15 +596,15 @@ def main():
 	print("Creating .zip files for each Region/Division...")
 	zip_work_dir="%s/%s" % (work_dir, zip_name)
 	os.chdir(zip_work_dir)
-	print("Working directory: %s" % (zip_work_dir))
+#	print("Working directory: %s" % (zip_work_dir))
 	print("Creating all of the Region and Divsion ZIP files in: %s" % (dist_dir))
 	output_files = glob.glob("*")
 	for output_file in output_files:
 		if (os.path.isdir(output_file)):
-			print("Directory to Zip: %s" % output_file)
+#			print("Directory to Zip: %s" % output_file)
 			bn = os.path.basename(output_file)
 			zip_file_name = "%s/%s/%s.zip" % (parent_dir, dist_dir, bn)
-			print("\t%s/%s" % (dist_dir, os.path.basename(zip_file_name)))
+#			print("\t%s/%s" % (dist_dir, os.path.basename(zip_file_name)))
 			roster_directory = output_file
 			zip_directory(zip_file_name, roster_directory, False)
 			processed_files.append(zip_file_name)
@@ -574,13 +614,13 @@ def main():
 	#
 	# This creates one Zip of all of the files to archive the entire monthly report
 	#
-	print("Creating a .zip file of all of the individual Region/Division .zip files...")
+	print("Creating a .zip archive of this monthly report...")
 	os.chdir(parent_dir)
 	release_parent_dir = "%s" % (dist_dir)
 	os.chdir(release_parent_dir)
-	print("Release directory: %s" % release_parent_dir)
+#	print("Release directory: %s" % release_parent_dir)
 	full_zip_file_name = "%s/%s/%s_processed.zip" % (parent_dir, myargs.dist_dir[0], zip_filename)
-	print("\nCreating a complete zip file of %s in: %s" % (zip_name, full_zip_file_name))
+	print("\nArchive of %s is in: %s" % (zip_name, full_zip_file_name))
 	zip_directory(full_zip_file_name, zip_name, True)
 	print("---------------------------------------------------------")
 	#
@@ -595,25 +635,6 @@ def main():
 		print("")
 		print("Here's the steps that need to be done manually...")
 		email_distribution.print_email_list()
-	pass
-	print("---------------------------------------------------------")
-	print("")
-	print("Files to be sent to these recipients:")
-	for cfg in all_recipients.keys():
-#		print("File: %s" % (cfg))
-		next1 = all_recipients.get(cfg)
-		for action in next1.keys():
-#			print("\t%s" % (action))
-			next2 = next1.get(action)
-			for data in next2:
-				for recip, file_list in data.items():
-					print("\t%s" % (recip))
-					for file in file_list:
-						print("\t\t%s" % (file))
-					pass
-				pass
-			pass
-		pass
 	pass
 	print("---------------------------------------------------------")
 	print("")

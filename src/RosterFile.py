@@ -77,14 +77,18 @@ class RosterFile:
 
 	pass
 
-	def get_id(self, row):
+	def get_nmra_id(self, row):
 		return '%s' % (self.roster_rdf.at[row, 'id'])
 	pass
 	def get_lname(self, row):
-		return '%s' % (self.roster_rdf.at[row, 'lname'])
+		lname = '%s' % (self.roster_rdf.at[row, 'lname'])
+		' '.join(lname.split())		
+		return '%s' % (lname)
 	pass
 	def get_fname(self, row):
-		return '%s' % (self.roster_rdf.at[row, 'fname'])
+		fname = '%s' % (self.roster_rdf.at[row, 'fname'])
+		' '.join(fname.split())		
+		return '%s' % (fname)
 	pass
 	def get_email(self, row):
 		if 'email' in self.roster_rdf.columns:
@@ -119,16 +123,31 @@ class RosterFile:
 	#
 	def is_member_reassigned(self, nmra_id, row):
 		ret_val = False
-		if (self.reassignments.has_member(nmra_id)):
-			if ((self.get_division(row) == self.reassignments.get_from_division(nmra_id)) and (self.get_division(row) != self.reassignments.get_to_division(nmra_id))):
-				if ((self.get_lname(row) == self.reassignments.get_lname(nmra_id)) and (self.get_fname(row) == self.reassignments.get_fname(nmra_id))):
+		
+		reassign_this_member	= self.reassignments.has_member(nmra_id)
+		
+		if (reassign_this_member):
+			member_div			= self.get_division(row)
+			member_id			= self.get_nmra_id(row)
+			member_lname		= self.get_lname(row)
+			member_fname		= self.get_fname(row)
+			reassign_from_div	= self.reassignments.get_from_division(nmra_id)
+			reassign_to_div		= self.reassignments.get_to_division(nmra_id)
+			reassign_id			= self.reassignments.get_nmra_id(nmra_id)
+			reassign_lname		= self.reassignments.get_lname(nmra_id)
+			reassign_fname		= self.reassignments.get_fname(nmra_id)
+			if ((member_div == reassign_from_div) and (member_div != reassign_to_div)):
+#				if ((member_lname == reassign_lname) and (member_fname == reassign_fname)):
+				if ((member_id == reassign_id)):
 					ret_val = True
 				else:
-					print("WARNING: Reassignment found for member %s, however, the name doesn't match so no reassignment" % nmra_id)
-#					print("From Division: %d <=> %d" % (self.get_division(row), self.reassignments.get_from_division(nmra_id)))
-#					print("To Division: %d <=> %d" % (self.get_division(row), self.reassignments.get_to_division(nmra_id)))
-#					print("Last Name: %s=> %s" % (self.get_lname(row), self.reassignments.get_lname(nmra_id)))
-#					print("First Name: %s <=> %s" % (self.get_fname(row), self.reassignments.get_fname(nmra_id)))
+#					print("WARNING: Reassignment found for member %s, however, the name doesn't match so no reassignment" % nmra_id)
+					print("WARNING: Reassignment found for member %s, however, the member ID doesn't match so no reassignment" % nmra_id)
+					print("From Division: '%d' <=> '%d'" % (member_div, reassign_from_div))
+					print("  To Division: '%d' <=> '%d'" % (member_div, reassign_to_div))
+					print("      NMRA ID: '%s' <=> '%s'" % (member_id, reassign_id))
+					print("   Last Name:  '%s' <=> '%s'" % (member_lname, reassign_lname))
+					print("  First Name:  '%s' <=> '%s'" % (member_fname, reassign_fname))
 						  
 				pass
 			pass
@@ -143,8 +162,9 @@ class RosterFile:
 		#
 		# Get the sheet
 		#
-		self.roster_exf = pd.ExcelFile(filename)
-		self.roster_rdf = self.roster_exf.parse()
+#		self.roster_exf = pd.ExcelFile(filename)
+#		self.roster_rdf = self.roster_exf.parse(parse_dates=self.date_fields)
+		self.roster_rdf = pd.read_excel(filename, date_format=self.date_format, dtype='string') #parse_dates=self.date_fields)
 		#
 		# Make all of the column headings lower case
 		#
@@ -157,12 +177,16 @@ class RosterFile:
 			pass
 #			print("\t%s=>%s" % (old, new))
 			self.roster_rdf.rename(columns={old : new}, inplace=True)
+			if ((new == 'birthyear') or (new == 'zip')):
+#			if (new == 'zip'):
+				self.roster_rdf[new] = self.roster_rdf[new].astype('string')
+			pass
 		pass
 		#
 		# Fix the date field
 		#
 		for field in self.date_fields:
-#			print("Setting column %s to %s format..." % (field, self.date_format))
+#		print("Setting column %s to %s format..." % (field, self.date_format))
 			self.roster_rdf[field]=pd.to_datetime(self.roster_rdf[field])
 			self.roster_rdf[field]=self.roster_rdf[field].dt.strftime(self.date_format)
 		pass
@@ -305,7 +329,7 @@ class RosterFile:
 			# Write to the division file if this member is in a division
 			#
 			if (reassign):
-				print("\tProcessing division reassignment for NMRA member %s from division %02d%02d to division %02d%02d" % (nmra_id, m_region, m_division, r_region, r_division))
+				print("\t\tProcessing division reassignment for NMRA member %s from division %02d%02d to division %02d%02d" % (nmra_id, m_region, m_division, r_region, r_division))
 				self.reassign_member(dataframe_id, row, r_region, r_division, recipient)
 			else:
 				self.write_row(dataframe_id, row, recipient)
@@ -321,17 +345,17 @@ class RosterFile:
 			if (recipient == 'division'):
 				for div_fid in self.division_filenames.keys():
 #					print("**Saving Division Workbook %s, %s" % (div_fid, self.division_filenames[div_fid]))
-					self.roster_wddf[div_fid].to_csv(self.division_filenames[div_fid], index=False, date_format=self.date_format)
+					self.roster_wddf[div_fid].to_csv(self.division_filenames[div_fid], index=False, date_format=self.date_format)#, float_format='{:.0}'.format)
 				pass
 			elif (recipient == 'region'):
 				for reg_fid in self.region_filenames.keys():
 #					print("**Saving Region Workbook %s, %s" % (reg_fid, self.region_filenames[reg_fid]))
-					self.roster_wrdf[reg_fid].to_csv(self.region_filenames[reg_fid], index=False, date_format=self.date_format)
+					self.roster_wrdf[reg_fid].to_csv(self.region_filenames[reg_fid], index=False, date_format=self.date_format)#, float_format='{:.0}'.format)
 				pass
 			elif (recipient == 'editor'):
 				for ed_fid in self.editor_filenames.keys():
 #					print("**Saving Region Workbook %s, %s" % (self.editor_filenames[ed_fid]))
-					self.roster_wedf[ed_fid].to_csv(self.editor_filenames[ed_fid], index=False, date_format=self.date_format)
+					self.roster_wedf[ed_fid].to_csv(self.editor_filenames[ed_fid], index=False, date_format=self.date_format)#, float_format='{:.0}'.format)
 				pass
 			pass
 		pass
@@ -364,7 +388,7 @@ class RosterFile:
 			#
 			# find the required parameters for this member
 			#
-			a_id = self.get_id(row)
+			a_id = self.get_nmra_id(row)
 			a_lname = self.get_lname(row)
 			a_fname = self.get_fname(row)
 			a_email = self.get_email(row)
@@ -372,6 +396,7 @@ class RosterFile:
 			a_region = self.get_region(row)
 			reg_fid = self.nmra_map.get_file_id(a_region, 0)
 			this_reg_fid = self.nmra_map.get_file_id(self.region, 0)
+			this_reg_rid = self.nmra_map.get_region_id(this_reg_fid)
 			this_reg_name = self.nmra_map.get_region_id(this_reg_fid)
 			div_fid = self.nmra_map.get_file_id(a_region, a_division)
 			if (self.enable_reassignment and self.reassignments.has_member(a_id)):
@@ -429,14 +454,14 @@ class RosterFile:
 						if (not this_reg_fid in self.regions):
 							region_only = True
 							self.regions.append(this_reg_fid)
-							reg_dir = "%s/%s_Region" % (self.work_dir, this_reg_name)
+							reg_dir = "%s/%s_Region" % (self.work_dir, this_reg_rid)
 							self.create_workbook(this_reg_fid, reg_dir, recipient)
-							if (recipient in self.recipient_list):
-								if (not recipient in self.recipients.keys()):
-									self.recipients.update({recipient: [self.format_filename(reg_dir)]})
-								else:
-									self.recipients[recipient].append(self.format_filename(reg_dir))
-								pass
+						pass
+						if (recipient in self.recipient_list):
+							if (not recipient in self.recipients.keys()):
+								self.recipients.update({recipient: [self.format_filename(reg_dir)]})
+							else:
+								self.recipients[recipient].append(self.format_filename(reg_dir))
 							pass
 						pass
 						self.write_member(a_id, row, this_reg_fid, recipient)
@@ -445,12 +470,12 @@ class RosterFile:
 							self.regions.append(reg_fid)
 							reg_dir = "%s/%s_Region" % (self.work_dir, reg_name)
 							self.create_workbook(reg_fid, reg_dir, recipient)
-							if (recipient in self.recipient_list):
-								if (not recipient in self.recipients.keys()):
-									self.recipients.update({recipient: [self.format_filename(reg_dir)]})
-								else:
-									self.recipients[recipient].append(self.format_filename(reg_dir))
-								pass
+						pass
+						if (recipient in self.recipient_list):
+							if (not recipient in self.recipients.keys()):
+								self.recipients.update({recipient: [self.format_filename(reg_dir)]})
+							else:
+								self.recipients[recipient].append(self.format_filename(reg_dir))
 							pass
 						pass
 						self.write_member(a_id, row, reg_fid, recipient)
@@ -460,14 +485,14 @@ class RosterFile:
 						if (not reg_fid in self.regions):
 							region_only = True
 							self.regions.append(this_reg_fid)
-							reg_dir = "%s/%s_Region" % (self.work_dir, this_reg_name)
+							reg_dir = "%s/%s_Region" % (self.work_dir, this_reg_rid)
 							self.create_workbook(this_reg_fid, reg_dir, recipient)
-							if (recipient in self.recipient_list):
-								if (not recipient in self.recipients.keys()):
-									self.recipients.update({recipient: [self.format_filename(reg_dir)]})
-								else:
-									self.recipients[recipient].append(self.format_filename(reg_dir))
-								pass
+						pass
+						if (recipient in self.recipient_list):
+							if (not recipient in self.recipients.keys()):
+								self.recipients.update({recipient: [self.format_filename(reg_dir)]})
+							else:
+								self.recipients[recipient].append(self.format_filename(reg_dir))
 							pass
 						pass
 						self.write_member(a_id, row, this_reg_fid, recipient)
@@ -494,7 +519,7 @@ class RosterFile:
 					if ('editor' in self.recipient_list):						
 						ed_fid = this_reg_fid
 						self.editor.append(ed_fid)
-						ed_dir = "%s/%s_Region_Editor" % (self.work_dir, this_reg_name)
+						ed_dir = "%s/%s_Region_Editor" % (self.work_dir, this_reg_rid)
 						self.create_workbook(ed_fid, ed_dir, recipient)
 						if (not recipient in self.recipients.keys()):
 							self.recipients.update({recipient : [self.format_filename(ed_dir)]})
@@ -509,9 +534,15 @@ class RosterFile:
 			# update the distribution lists--only regional members will be in the distribution list
 			# and only for the list marked validate="True" in the XML
 			#
-			if ((reg_fid == this_reg_fid) and not region_only and self.validate):
-				distribution.validate_recipient(self.nmra_map, parent_dir, dist_dir, zip_filename, a_id, r_region,
-											r_division, r_lname, r_fname, a_email, force_override)
+#			if ((reg_fid == this_reg_fid) and not region_only and self.validate):
+			if ((reg_fid == this_reg_fid) and self.validate):
+#				if (a_id == "L02711 10"):
+#					print("Found: %s\n" % (a_id))
+				if (not distribution.is_member_validated(a_id)):
+#					if (a_id == "L02711 10"):
+#						print("Validating: %s\n" % (a_id))
+					distribution.validate_recipient(self.nmra_map, parent_dir, dist_dir, zip_filename, a_id, r_region, r_division, r_lname, r_fname, a_email, force_override)
+				pass
 			pass
 		pass
 		#

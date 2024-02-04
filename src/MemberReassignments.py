@@ -34,6 +34,9 @@ class MemberReassignments:
 	# Return the given field from the reassignment list for the given NMRA member
 	# these assume has_member() has been called to check for this NMRA member first
 	#	
+	def get_nmra_id(self, nmra_id):
+		return self.members[nmra_id]['id']
+	pass
 	def get_from_region(self, nmra_id):
 		return self.members[nmra_id]['from_region']
 	pass
@@ -69,7 +72,9 @@ class MemberReassignments:
 	# Add a member to the reassignment list
 	#
 	def add_member(self, nmra_id, from_region, from_division, to_region, to_division, lname, fname):
-		self.members[nmra_id] = { 'from_region' : from_region, 'from_division' : from_division, 'to_region' : to_region, 'to_division' : to_division, 'lname' : lname, 'fname' : fname}
+		' '.join(lname.split())
+		' '.join(fname.split())
+		self.members[nmra_id] = { 'id' : nmra_id, 'from_region' : from_region, 'from_division' : from_division, 'to_region' : to_region, 'to_division' : to_division, 'lname' : lname, 'fname' : fname}
 	pass
 	#
 	# Reads the reassignment file and populates its data structure in memory
@@ -106,7 +111,7 @@ class MemberReassignments:
 			if (f_region != t_region):
 				raise ValueError('NMRA Members are NOT allowed to change regions with this program!')
 			pass
-			print("Reassigning NMRA Member %s, (%s, %s) from Division %02d%02d to Division %02d%02d" % (r_id, r_lname, r_fname, f_region, f_division, t_region, t_division))
+			print("\tReassigning NMRA Member %s, (%s, %s) from Division %02d%02d to Division %02d%02d" % (r_id, r_lname, r_fname, f_region, f_division, t_region, t_division))
 
 			self.add_member(r_id, f_region, f_division, t_region, t_division, r_lname, r_fname)
 		pass

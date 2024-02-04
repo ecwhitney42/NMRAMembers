@@ -21,7 +21,7 @@ class CopyFile:
 		return
 	pass
 
-	def process(self, roster_file, instance, roster_filename, parent_dir, work_dir, iformat, oformat, region, config, nmra_map):
+	def process(self, roster_file, instance, roster_filename, work_dir, oformat, region, config, nmra_map):
 		recipient_list = config.get_recipients('copy', roster_file, instance)
 		recipients = {}
 		for recipient in recipient_list:

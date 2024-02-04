@@ -2,16 +2,16 @@
 <config>
     <nmra-xlsx>
         <definitions>
-            <parameter name="recipient" value="printer"      description="Mailing list data sent to the regional newsletter printer."/>
-            <parameter name="recipient" value="region"       description="Reports sent to the regional leadership."/>
-            <parameter name="recipient" value="editor"       description="Reports sent to the regional newsletter editor."/>
-            <parameter name="recipient" value="division"     description="Reports sent to each division."/>
-            <parameter name="action"    value="newsletter"   description="Create the regional newsletter mailiing list."/>
-            <parameter name="action"    value="copy"         description="Copy the file to the recipient without altering."/>
-            <parameter name="action"    value="reassignment" description="Copy the file to the recipient after applying the member division reassignment algorithm."/>
-            <parameter name="iformat"   value="xlsx"         description="Input file format."/>
-            <parameter name="oformat"   value="csv"          description="Output file format."/>
-            <parameter name="date_format"   value="%m/%d/%y"     description="Output date format used when writing out the CSV files."/>
+            <parameter name="recipient"     value="printer"         description="Mailing list data sent to the regional newsletter printer."/>
+            <parameter name="recipient"     value="region"          description="Reports sent to the regional leadership."/>
+            <parameter name="recipient"     value="editor"          description="Reports sent to the regional newsletter editor."/>
+            <parameter name="recipient"     value="division"        description="Reports sent to each division."/>
+            <parameter name="action"        value="newsletter"      description="Create the regional newsletter mailiing list."/>
+            <parameter name="action"        value="copy"            description="Copy the file to the recipient without altering."/>
+            <parameter name="action"        value="reassignment"    description="Copy the file to the recipient after applying the member division reassignment algorithm."/>
+            <parameter name="iformat"       value="xlsx"            description="Input file format."/>
+            <parameter name="oformat"       value="csv"             description="Output file format."/>
+            <parameter name="date_format"   value="%m/%d/%Y"        description="Output date format used when writing out the CSV files."/>
         </definitions>
         <reports>
             <newsletter>
@@ -51,20 +51,30 @@
                 </file>
             </copy>
             <reassignment>
-                <file name="30DaysPastDueReport">
+                <file name="MonthlyMemberRosterReport" validate="True">
                     <recipient>region</recipient>
                     <recipient>division</recipient>
-                    <date_fields>"joined,rerail,lastpay,renewed"</date_fields>
+                    <date_fields>"expires,joined,rerail,lastpay,renewed"</date_fields>
                 </file>
-                <file name="60DaysPastDueReport">
+                <file name="30DaysPastDueReport" validate="True">
                     <recipient>region</recipient>
                     <recipient>division</recipient>
-                    <date_fields>"joined,rerail,lastpay,renewed"</date_fields>
+                    <date_fields>"expires,joined,rerail,lastpay,renewed"</date_fields>
+                </file>
+                <file name="60DaysPastDueReport" validate="True">
+                    <recipient>region</recipient>
+                    <recipient>division</recipient>
+                    <date_fields>"expires,joined,rerail,lastpay,renewed"</date_fields>
                 </file>
                 <file name="NewMembersReport">
                     <recipient>region</recipient>
                     <recipient>division</recipient>
-                    <date_fields>"expires,joined,lastpay"</date_fields>
+                    <date_fields>"expires,joined,rerail,lastpay,renewed"</date_fields>
+                </file>
+                <file name="RenewalsReport" validate="True">
+                    <recipient>region</recipient>
+                    <recipient>division</recipient>
+                    <date_fields>"expires,joined,rerail,renewed"</date_fields>
                 </file>
                 <file name="RegionNewSubscriptionsReport">
                     <recipient>region</recipient>
@@ -76,12 +86,16 @@
                     <recipient>division</recipient>
                     <date_fields>"expires,subscriptionpaid,subscriptionstart,subscriptionend"</date_fields>
                 </file>
-                <file name="RenewalsReport">
+                <file name="ChangeOfAddressReport" validate="True">
                     <recipient>region</recipient>
                     <recipient>division</recipient>
-                    <date_fields>"expires,joined,rerail,renewed"</date_fields>
+                    <date_fields>"expires,joined,rerail,lastpay,renewed"</date_fields>
                 </file>
-                <file name="MonthlyMemberRosterReport" validate="True">
+                <file name="BoundaryReport">
+                    <recipient>region</recipient>
+                    <date_fields>"expires,subscriptionpaid,subscriptionstart,subscriptionend"</date_fields>
+                </file>
+                <file name="RegionDeceasedMemberReport">
                     <recipient>region</recipient>
                     <recipient>division</recipient>
                     <date_fields>"expires,joined,rerail,lastpay,renewed"</date_fields>
@@ -96,6 +110,11 @@
                     <recipient>division</recipient>
                     <date_fields>"expires,joined,rerail,lastpay,renewed"</date_fields>
                 </file>
+                <file name="SubscriptionMonthlyDuesReport">
+                    <recipient>region</recipient>
+                    <recipient>division</recipient>
+                    <date_fields>"expires,subscriptionpaid,subscriptionstart,subscriptionend"</date_fields>
+                </file>
             </reassignment>
         </reports>
     </nmra-xlsx>
@@ -108,7 +127,7 @@
             <parameter name="action"        value="reassignment" description="Copy the file to the recipient after applying the member division reassignment algorithm."/>
             <parameter name="iformat"       value="xlsx"         description="Input file format."/>
             <parameter name="oformat"       value="csv"          description="Output file format."/>
-            <parameter name="date_format"   value="%m/%d/%y"     description="Output date format used when writing out the CSV files."/>
+            <parameter name="date_format"   value="%m/%d/%Y"     description="Output date format used when writing out the CSV files."/>
         </definitions>
         <reports>
             <reassignment>
