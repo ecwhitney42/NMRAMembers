@@ -91,16 +91,11 @@ class EmailDistribution:
 			dist_fname		= self.distribution_list[x].get('fname')
 			dist_email		= self.distribution_list[x].get('email')
 
-#			if (nmra_id == "L02711 10"):
-#				print("reg: %s, div: %s, lname: %s, fname, %s" % (reg_name, div_name, lname, fname))
-#				print("dist_reg: %s, dist_div: %s, dist_lname: %s, dist_fname, %s" % (dist_region, dist_division, dist_lname, dist_fname))
-			
-#			if (dist_nmra_id == nmra_id) and (dist_region == region) and (dist_lname == lname) and (dist_fname == fname):
-			if (dist_nmra_id == nmra_id) and (dist_region == region):
+			if ((dist_nmra_id == nmra_id) and ((dist_region == region) or force_override)):
 				location = "%s %s Division" % (reg_name, div_name)
 				self.distribution_list[x].update({'location' : location})
 				self.distribution_list[x].update({'valid_member' : True})
-				if (((dist_email == email) and (dist_division == division)) or (force_override and (dist_email != email) or (dist_division != division))):
+				if (((dist_email == email) and (dist_division == division)) or force_override):
 					self.distribution_list[x].update({'valid_email' : True})
 					#
 					# NMRA = zip file of the entire directory of the processed results
@@ -112,22 +107,17 @@ class EmailDistribution:
 #						zip_file = "%s/%s/../%s_processed.zip" % (parent_dir, dist_dir, zip_filename)
 					filearg = self.distribution_list[x].get('file')
 					if (self.distribution_list[x].get('category') == "REGION"):
-						zip_file = "%s/%s/%s" % (
-						parent_dir, dist_dir, filearg)
+						zip_file = "%s/%s/%s" % (parent_dir, dist_dir, filearg)
 					elif (self.distribution_list[x].get('category') == "DIVISION"):
-						zip_file = "%s/%s/%s" % (
-						parent_dir, dist_dir, filearg)
+						zip_file = "%s/%s/%s" % (parent_dir, dist_dir, filearg)
 					elif (self.distribution_list[x].get('category') == "REGIONFILE"):
 						prefix = "%s_Region-%s_Division" % (reg_rid, div_name)
-						zip_file = "%s_Region_%s added to %s/%s/%s.zip" % (
-						reg_rid, filearg, parent_dir, dist_dir, prefix)
+						zip_file = "%s_Region_%s added to %s/%s/%s.zip" % (reg_rid, filearg, parent_dir, dist_dir, prefix)
 						self.file_list.append({div_fid : filearg})
 					elif (self.distribution_list[x].get('category') == "PRINTER"):
-						zip_file = "%s/%s/%s" % (
-						parent_dir, dist_dir, filearg)
+						zip_file = "%s/%s/%s" % (parent_dir, dist_dir, filearg)
 					elif (self.distribution_list[x].get('category') == "EDITOR"):
-						zip_file = "%s/%s/%s" % (
-						parent_dir, dist_dir, filearg)
+						zip_file = "%s/%s/%s" % (parent_dir, dist_dir, filearg)
 					pass
 					self.distribution_list[x].update({'zip_file' : zip_file})
 					if (force_override and ((dist_email != email) or (dist_division != division))):
@@ -303,7 +293,6 @@ class EmailDistribution:
 			receiver_lname	  = recipient.get('lname')
 			receiver_email	  = recipient.get('email')
 			valid_email		  = recipient.get('valid_email')
-			bcc_email		  = self.sender_bcc
 			if (valid_email):
 				valid_string = 'Y'
 			else:

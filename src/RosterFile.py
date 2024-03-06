@@ -187,7 +187,7 @@ class RosterFile:
 		#
 		for field in self.date_fields:
 #		print("Setting column %s to %s format..." % (field, self.date_format))
-			self.roster_rdf[field]=pd.to_datetime(self.roster_rdf[field])
+			self.roster_rdf[field]=pd.to_datetime(self.roster_rdf[field], format='mixed')
 			self.roster_rdf[field]=self.roster_rdf[field].dt.strftime(self.date_format)
 		pass
 		#
@@ -498,7 +498,7 @@ class RosterFile:
 						self.write_member(a_id, row, this_reg_fid, recipient)
 					else:
 						if (r_division == 0):
-							print("NMRA-ERROR!: Division Member %s: %-20s %-45s has their division ID set to 0 from the NMRA report, therefore they won't appear in their division report!" % (a_id, "%s %s" % (a_fname, a_lname), "(%s)" % a_email))
+							print("NMRA-NOTE!: Division Member %s: %-20s %-45s has their division ID set to 0 from the NMRA report, therefore they won't appear in their division report!" % (a_id, "%s %s" % (a_fname, a_lname), "(%s)" % a_email))
 						else:
 							if ((not div_fid in self.divisions) and (recipient in self.recipient_list)):
 								self.divisions.append(div_fid)
@@ -534,12 +534,9 @@ class RosterFile:
 			# update the distribution lists--only regional members will be in the distribution list
 			# and only for the list marked validate="True" in the XML
 			#
-#			if ((reg_fid == this_reg_fid) and not region_only and self.validate):
 			if ((reg_fid == this_reg_fid) and self.validate):
-#				if (a_id == "L02711 10"):
 #					print("Found: %s\n" % (a_id))
 				if (not distribution.is_member_validated(a_id)):
-#					if (a_id == "L02711 10"):
 #						print("Validating: %s\n" % (a_id))
 					distribution.validate_recipient(self.nmra_map, parent_dir, dist_dir, zip_filename, a_id, r_region, r_division, r_lname, r_fname, a_email, force_override)
 				pass

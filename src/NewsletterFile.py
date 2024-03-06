@@ -255,6 +255,13 @@ class NewsletterFile:
 	#
 	def process(self, parent_dir):
 		#
+		# write out all the rows...
+		#
+		self.roster_ws_row[self.roster_id] = 1
+		for row in range(1, self.roster_nrows):
+			self.write_row(row)
+		pass
+		#
 		# Write out the spreadsheets to all of the output files
 		#
 		for recipient in self.recipient_list:
@@ -272,10 +279,6 @@ class NewsletterFile:
 			
 			output_filename = "%s/%s.%s" % (reg_dir, self.output_name, self.roster_ofmt)
 	
-			
-			for row in range(1, self.roster_nrows):
-				self.write_row(row)
-			pass
 			if (len(self.roster_sorts[self.roster_id].keys()) > 0):
 	#			print("We need to sort this one...")
 				#

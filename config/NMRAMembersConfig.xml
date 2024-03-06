@@ -15,7 +15,8 @@
         </definitions>
         <reports>
             <newsletter>
-                <file name="RegionNewsletterSubscriptionReport">
+<!--            <file name="RegionNewsletterSubscriptionReport"> -->
+                <file name="BoundaryReport">
                     <recipient>printer</recipient>
                     <recipient>editor</recipient>
                     <fields>"title,lname,fname,mname,Organization,address1,address2,city,State,zip,plus4,Division"</fields>
@@ -56,6 +57,11 @@
                     <recipient>division</recipient>
                     <date_fields>"expires,joined,rerail,lastpay,renewed"</date_fields>
                 </file>
+                <file name="RegionSeasonalMembers" validate="True">
+                    <recipient>region</recipient>
+                    <recipient>division</recipient>
+                    <date_fields>"expires,joined,rerail,lastpay,renewed"</date_fields>
+                </file>
                 <file name="30DaysPastDueReport" validate="True">
                     <recipient>region</recipient>
                     <recipient>division</recipient>
@@ -76,7 +82,8 @@
                     <recipient>division</recipient>
                     <date_fields>"expires,joined,rerail,renewed"</date_fields>
                 </file>
-                <file name="RegionNewSubscriptionsReport">
+<!--            <file name="RegionNewSubscriptionsReport"> -->
+                <file name="SubscriptionMonthlyDuesReport">
                     <recipient>region</recipient>
 <!--                    <recipient>editor</recipient> -->
                     <date_fields>"expires,subscriptionpaid,subscriptionstart,subscriptionend"</date_fields>

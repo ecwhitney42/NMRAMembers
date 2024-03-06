@@ -14,17 +14,16 @@ on run argv
     -- This is the static text that will be used for all email body text
     set LocContent to "
 
-        I am re-sending the January reports because I fixed the bug (this time for sure) that was causing some of the columns to
-        output in floating point format. This is a bug on my end that I thought I had fixed before but it reared it's ugly head.
-        My apologies for the hassle. BTW, I am working with NMRA IT on this whole CSV thing since they haven't rolled it out yet
-        maybe I can convince them that it really is just a giant pain in the neck and they should reconsider their options... ;-)
+        Here's the February reports. As usual, I found some things that have changed in the reports so I made some minor adjustments
+        but I may not have caught everything. Quite a few members came through assigned to Division 0 so if you're missing someone,
+        they might be in the region roster only...
 
         Best Regards,
 
         -Erich
 
         Erich Whitney
-        NER Interim Office Manager
+        NER Office Manager
         NER Eastern Area Director
         HUB Division Director
         I Am The NMRA

@@ -249,13 +249,14 @@ def main():
 # Create the program argument definitions
 #
 #------------------------------------------------------------------------------
-	program_version = "v2.11"
+	program_version = "v2.12"
 	default_config_file=['./config/NMRAMembersConfig.xml']
 	default_reassignment_file=['./config/NMRA_Division_Reassignments.xlsx']
 	default_map_file=['./config/NMRA_Region_Division_Map.xlsx']
 	default_email_file=['./config/NMRA_Email_Distribution_List.xlsx']
 	default_work_dir=['work']
 	default_dist_dir=['release']
+	default_seasonal_members_file=['./RegionSeasonalMembers.xlsx']
 	default_distribute=False
 	default_override_email=False
 	default_legacy_mode=False
@@ -318,6 +319,14 @@ def main():
 		help="Name of the directory where all of the final output files go (default: %s)" % (default_dist_dir)
 		)
 	parser.add_argument(
+		'-n', '--seasonal',
+		metavar='seasonal',
+		nargs=1,
+		default=default_seasonal_members_file,
+		required=False,
+		help="Filename of the .xlsx seasonal members file (default: %s)" % (default_seasonal_members_file)
+		)
+	parser.add_argument(
 		'-s', '--send_email',
 		action="store_true",
 		default=default_distribute,
@@ -360,6 +369,7 @@ def main():
 	dist_dir = "%s/%s" % (myargs.dist_dir[0], zip_name)
 	config_file = myargs.config[0]
 	reassign_file = myargs.reassign[0]
+	seasonal_file = myargs.seasonal[0]
 	map_file = myargs.map_file[0]
 	unzip_dir = "%s/%s" % (myargs.work_dir[0], zip_name)
 	email_file = myargs.email_file[0]
@@ -438,6 +448,15 @@ def main():
 	print("Processing NMRA files for the %s Region (NMRA Region ID %d)..." % (region_rid, region))
 	#---------------------------------------------------------------------------------------------
 	#
+	# Copy the RegionSeasonalMembers file into the work directory for processing
+	#
+	#---------------------------------------------------------------------------------------------
+	if (os.path.exists(seasonal_file)):
+		seasonal_file_path = "%s/%d_%s" % (unzip_dir, region, os.path.basename(seasonal_file))
+		shutil.copyfile(seasonal_file, seasonal_file_path)
+	pass
+	#---------------------------------------------------------------------------------------------
+	#
 	# At this point, the NMRA ZIP file has been expanded into the work directory and all of the
 	# files are in a subdirectory that was named the same name as the ZIP filename
 	#
@@ -469,7 +488,7 @@ def main():
 	instance_count = {}	# keep track of how many different times each roster file is used
 	#
 	# Only process files identified in the XML config file
-#
+	#
 	#
 	# The Newsletter action is for the region newsletter mailing lists, new member and deceased member reports
 	#
@@ -502,21 +521,23 @@ def main():
 					print("\tPerforming %s Action..." % (action.upper()))
 					if (action == 'newsletter'):
 						enable_reassignment = False
-#						print("****Processing Newsletter File: %s, Instance %d" % (roster_filename, instance_count[config_file]))
+						print("****Processing Newsletter File: %s, Instance %d" % (roster_filename, instance_count[config_file]))
 						nf = NewsletterFile.NewsletterFile(roster_file, instance_count[config_file], unzip_dir, region, config, nmra_map)
 						nf.read_file(roster_filename)
 						nf_recipients = nf.process(parent_dir)
+						all_recipients.update({config_filename : {action : [nf_recipients]}})
 						if (not config_filename in all_recipients.keys() ):
 							all_recipients.update({config_filename : {action : [nf_recipients]}})
 						else:
 							current = all_recipients[config_filename]
+							all_recipients.update({config_filename : {action : [nf_recipients]}})
 							if (not action in current.keys()):
 								all_recipients.update({config_filename : {action : [nf_recipients]}})
 							else:
 								all_recipients[config_filename].get(action).append(nf_recipients)
 							pass
 						pass
-#						del nf
+						del nf
 						print("---------------------------------------------------------")
 					#
 					# The Copy action is for any files that just get copied without any member reassignment action
@@ -536,7 +557,7 @@ def main():
 								all_recipients[config_filename].get(action).append(cp_recipients)
 							pass
 						pass
-#						del cp
+						del cp
 						print("---------------------------------------------------------")
 					#
 					# The Reassignment action is for region and division roster files where we have to correct member division assignments based
@@ -558,7 +579,7 @@ def main():
 								all_recipients[config_filename].get(action).append(rf_recipients)
 							pass
 						pass
-#						del rf
+						del rf
 						print("---------------------------------------------------------")
 					pass
 				else:
