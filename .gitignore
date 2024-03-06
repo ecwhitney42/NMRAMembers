@@ -139,6 +139,7 @@ dmypy.json
 *.vpw
 *.vtg
 *.vpwhistu
+*.vpwhistuxml
 
 # Project-specific ignores
 release/
@@ -152,6 +153,7 @@ gitRelease/
 *.zip
 NMRAMemberRosterConverterAndDistribute.app/Contents/Resources/
 NMRAMemberRosterConverter.app/Contents/Resources/
+RegionSeasonalMembers.xlsx
 .DS_Store
 ~*
 #
