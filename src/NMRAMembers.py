@@ -4,8 +4,8 @@
 #
 # NMRAMembers.py
 # by Erich Whitney
-# Copyright (c) 2019-202, BlackCat Engineering
-# Version 2.11
+# Copyright (c) 2019-2024, BlackCat Engineering
+# Version 2.13
 #
 # This program is designed to process the monthly NMRA membership reports sent
 # to the regions by NMRA National. These reports come in the form of a .zip
@@ -94,6 +94,8 @@
 #			only been run directly from Python3.
 # v2.11		Fixed bugs with zipcode and birthyear numerical format issues.
 #			Added AppleScript for email distribution.
+# v2.12		Updates to newsletter report generation.
+# v2.13		Fixed bug in newsletter report generation.
 ###############################################################################
 ###############################################################################
 import sys
@@ -249,7 +251,7 @@ def main():
 # Create the program argument definitions
 #
 #------------------------------------------------------------------------------
-	program_version = "v2.12"
+	program_version = "v2.13"
 	default_config_file=['./config/NMRAMembersConfig.xml']
 	default_reassignment_file=['./config/NMRA_Division_Reassignments.xlsx']
 	default_map_file=['./config/NMRA_Region_Division_Map.xlsx']

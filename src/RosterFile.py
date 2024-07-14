@@ -23,8 +23,6 @@
 import sys
 import pandas as pd 
 import DivisionMap
-import xlrd
-import xlwt
 import os
 import re
 import warnings

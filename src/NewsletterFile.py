@@ -21,9 +21,6 @@
 # that each month does not overwrite a previous month.
 #------------------------------------------------------------------------------
 import sys
-import pyexcel
-import xlrd
-import xlwt
 import os
 import re
 import NMRAMembersConfig
@@ -81,8 +78,9 @@ class NewsletterFile:
 		includes = config.get_includes('newsletter', roster_name, self.instance)
 		self.roster_sorts.update({self.roster_id : config.get_sorts('newsletter', roster_name, self.instance)})
 		self.roster_includes.update({self.roster_id : includes})
-		self.roster_ws.update({self.roster_id : pyexcel.Sheet()})
-		self.roster_ws[self.roster_id].extend_rows(self.roster_format)
+#		self.roster_ws.update({self.roster_id : pyexcel.Sheet()})
+		self.roster_ws.update({self.roster_id : pd.DataFrame(columns=self.roster_format)})
+#		self.roster_ws[self.roster_id].extend_rows(self.roster_format)
 		self.roster_ws_row.update({self.roster_id : 1})
 
 #		print("roster_name: %s(%d): " % (self.roster_name, self.instance))
@@ -101,30 +99,30 @@ class NewsletterFile:
 		#
 		# Get the sheet
 		#
-		self.roster_rs = pyexcel.get_sheet(file_name=filename)
-		self.roster_rs_name.update({self.roster_id : self.roster_rs.name})
-		self.roster_nrows = self.roster_rs.number_of_rows()
-		self.roster_ncols = self.roster_rs.number_of_columns()
+#		self.roster_rs = pyexcel.get_sheet(file_name=filename)
+		self.roster_rs = pd.read_excel(filename, dtype='string')
+		sheet_name = "RegionalSubscriptions"
+		self.roster_rs_name.update({self.roster_id : sheet_name})
+		self.roster_nrows = len(self.roster_rs.index)
+		self.roster_ncols = len(self.roster_rs.columns)
 		#
 		# Figure out where all the data is in the header of the roster file
 		#
+		found = True
 		for field in self.roster_fields:
-			col = 0
-			found = False
-#			print("%s:" % (field), end="")
-			while (col < self.roster_ncols and not found):
-				if (self.roster_rs.cell_value(0, col) == field):
-					self.header_index.update({field : col})
-					found = True
-#					print("%s:" % (col), end="")
-				else:
-					col = col + 1
+			if not field in self.roster_rs.columns:
+				found = False
+				print("Error: Input field '%s' not found in %s!" % (field, filename))	
+			else:
+				for col in range(0, len(self.roster_rs.columns)):
+					if (field == self.roster_rs.columns[col]):
+						self.header_index.update({field : col})
+						break
+					pass
 				pass
 			pass
-			if (not found):
-				print("Error: Input field '%s' not found in %s!" % (field, filename))	
-			pass		
 		pass
+			
 		#
 		# Find the column that has the requested include field in it
 		# and store that include column number as the key to the list of
@@ -157,7 +155,7 @@ class NewsletterFile:
 		r_fname = ""
 		r_mname = ""
 		r_lname = ""
-		if (len(org) == 0):
+		if (not (type(org) is str)):
 			r_fname = fname
 			r_mname = mname
 			r_lname = lname
@@ -197,7 +195,7 @@ class NewsletterFile:
 			for hcol in self.roster_ws_output_includes[self.roster_id]:
 				values = self.roster_ws_output_includes[self.roster_id][hcol]
 #				print("hcol = %s, values = %s" % (hcol, values))
-				m_include = self.roster_rs.cell_value(row, hcol)
+				m_include = self.roster_rs.at[row, hcol]
 				if (not m_include in values):
 					skip = True
 #					print("Skipping member from %s" % (m_include))
@@ -207,46 +205,51 @@ class NewsletterFile:
 		if (not skip):
 			col = 0
 			cols = len(self.roster_format)
-			cells = []
+			write_row = self.roster_ws_row[self.roster_id]
 			while (col <= cols-1):
 				fmt = self.roster_format[col]
 #				print("%d:%s, " % (col, fmt), end="")
 				if (fmt == 'fname'):
-					idx1 = self.header_index['fname']
-					idx2 = self.header_index['mname']
-					idx3 = self.header_index['lname']
-					idx4 = self.header_index['Organization']
-					val1 = self.roster_rs.cell_value(row, idx1)
-					val2 = self.roster_rs.cell_value(row, idx2)
-					val3 = self.roster_rs.cell_value(row, idx3)
-					val4 = self.roster_rs.cell_value(row, idx4)
+#					idx1 = self.header_index['fname']
+#					idx2 = self.header_index['mname']
+#					idx3 = self.header_index['lname']
+#					idx4 = self.header_index['Organization']
+					val1 = self.roster_rs.at[row, 'fname']
+					val2 = self.roster_rs.at[row, 'mname']
+					val3 = self.roster_rs.at[row, 'lname']
+					val4 = self.roster_rs.at[row, 'Organization']
 					val=[]
 					val = self.CustomLabelNameMapping(val1, val2, val3, val4)
-					cells.append(val[0])
-					cells.append(val[1])
-					cells.append(val[2])
+#					cells.append(val[0])
+#					cells.append(val[1])
+#					cells.append(val[2])
+					self.roster_ws[self.roster_id].at[write_row, 'fname'] = val[0]
+					self.roster_ws[self.roster_id].at[write_row, 'mname'] = val[1]
+					self.roster_ws[self.roster_id].at[write_row, 'lname'] = val[2]
 					col = col + 3
 				elif ('-' in fmt):
 					zips = re.split(r'\-', fmt)
 #					print("zips is %s => %s" % (fmt, zips))
-					idx1 = self.header_index[zips[0]]
-					idx2 = self.header_index[zips[1]]
-					val1 = self.roster_rs.cell_value(row, idx1)
-					val2 = self.roster_rs.cell_value(row, idx2)
+#					idx1 = self.header_index[zips[0]]
+#					idx2 = self.header_index[zips[1]]
+					val1 = self.roster_rs.at[row, zips[0]]
+					val2 = self.roster_rs.at[row, zips[1]]
 					val = "%s-%s" % (val1, val2)
-					cells.append(val)
+#					cells.append(val)
+					self.roster_ws[self.roster_id].at[write_row, 'zip'] = val
 					col = col + 1
 				else:
-					idx = self.header_index[fmt]
-					val = self.roster_rs.cell_value(row, idx)
-					cells.append(val)
+#					idx = self.header_index[fmt]
+					val = self.roster_rs.at[row, fmt]
+#					cells.append(val)
+					self.roster_ws[self.roster_id].at[write_row, fmt] = val
 					col = col + 1
 				pass
 			pass
-#			print("")
-#			print("Row: %s, Data: " % (self.roster_ws_row[self.roster_id]), end="")
-#			print("%s" % (cells))
-			self.roster_ws[self.roster_id].extend_rows(cells)
+			print("")
+			print("Row: %s, Data: " % (self.roster_ws_row[self.roster_id]), end="")
+			print("%s" % (val))
+#			self.roster_ws[self.roster_id].extend_rows(cells)	
 			self.roster_ws_row[self.roster_id] = self.roster_ws_row[self.roster_id] + 1
 		pass
 	pass
@@ -258,7 +261,7 @@ class NewsletterFile:
 		# write out all the rows...
 		#
 		self.roster_ws_row[self.roster_id] = 1
-		for row in range(1, self.roster_nrows):
+		for row in range(0, self.roster_nrows):
 			self.write_row(row)
 		pass
 		#
@@ -290,8 +293,8 @@ class NewsletterFile:
 				# write out the data to an Excel temp file so we can use Pandas on it
 				#			
 				temp_output_filename = "%s/%s.%s" % (reg_dir, self.output_name, 'xlsx')
-				self.roster_ws[self.roster_id].name = self.roster_rs_name[self.roster_id]
-				self.roster_ws[self.roster_id].save_as(temp_output_filename)
+#				self.roster_ws[self.roster_id].name = self.roster_rs_name[self.roster_id]
+				self.roster_ws[self.roster_id].to_excel(temp_output_filename, sheet_name=self.roster_rs_name[self.roster_id])
 				#
 				# Read it back into a panda dataframe
 				#	
@@ -329,7 +332,8 @@ class NewsletterFile:
 				# at the end of the input sheet, write out all of the output sheets we made
 				#
 				print("\t\tOutput: %s" % (output_filename))
-				self.roster_ws[self.roster_id].save_as(output_filename)
+#				self.roster_ws[self.roster_id].save_as(output_filename)
+				self.roster_ws[self.roster_id].to_csv(output_filename, header=None, index=False)
 				if (recipient in self.recipient_list):
 					if (not recipient in self.recipients.keys()):
 						self.recipients.update({recipient: [output_filename]})

@@ -24,6 +24,7 @@
                     <sort>zip-plus4</sort>
                     <output name="CouplerUSMailingList"/>
                 </file>
+
 <!--
                 <file name="MonthlyMemberRosterReport">
                     <recipient>editor</recipient>

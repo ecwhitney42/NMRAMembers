@@ -14,9 +14,7 @@ on run argv
     -- This is the static text that will be used for all email body text
     set LocContent to "
 
-        Here's the February reports. As usual, I found some things that have changed in the reports so I made some minor adjustments
-        but I may not have caught everything. Quite a few members came through assigned to Division 0 so if you're missing someone,
-        they might be in the region roster only...
+	Here's the June reports. Please let me know if you see anything out of the ordinary.
 
         Best Regards,
 

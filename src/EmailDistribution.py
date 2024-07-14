@@ -26,6 +26,7 @@ import sys
 import os
 import pyexcel
 import pyexcel_xlsx
+import pandas as pd
 import io
 import email, smtplib
 from email import encoders
@@ -179,100 +180,68 @@ class EmailDistribution:
 	def read_file(self, filename):
 		print("Reading the NMRA Email Distribution File: %s" % filename)
 		try:
-			distribution_wb = pyexcel.get_book(file_name=filename)
-			distribution_ws = distribution_wb[self.distribution_worksheet]
-			settings_ws = distribution_wb[	self.settings_worksheet]
-		except:
+#			distribution_wb = pyexcel.get_book(file_name=filename)
+#			distribution_ws = distribution_wb[self.distribution_worksheet]
+#			settings_ws = distribution_wb[	self.settings_worksheet]
+
+			distribution_ws = pd.read_excel(filename, sheet_name=self.distribution_worksheet, dtype='string')
+			settings_ws 	= pd.read_excel(filename, sheet_name=self.settings_worksheet, dtype='string')
+
+		except ValueError:
 			print("Email Distribution Spreadsheet Error: ", sys.exc_info()[0])
-			raise
 		pass
 		#
 		# Process the email settings worksheet
 		#
+		# Check to see if the Settings tab contains all of the required columns
+		#
 		all_good = True
-		row_num = 0
-		for row in settings_ws:
-			#
-			# The first row contains the column headings we need to find the offsets
-			#
-			if (row_num == 0):
-				col_num = 0
-				for cell in row:
-					for key in self.required_settings_columns.keys():
-						if (cell == key):
-							self.required_settings_columns[key] = col_num
-						pass
-					col_num = col_num + 1
-				pass
-				for key in self.required_settings_columns.keys():
-					if (self.required_settings_columns[key] == -1):
-						all_good = False
-					pass
-				pass
-				if (all_good == False):
-					raise ValueError('All required columns MUST be included in the Email Settings Worksheet!')
-				pass
-			#
-			# The only settings that matter are the ones in the row right below the headers
-			#
-			elif (row_num == 1):
-				self.sender_email  = "%s" % row[self.required_settings_columns['email_sender']]
-				self.sender_bcc    = "%s" % row[self.required_settings_columns['email_bcc']]
-				self.smtp_address  = "%s" % row[self.required_settings_columns['email_smtp_address']]
-				#
-				# Report the settings found
-				#
-				print("The Emails will be sent by %s, BCC'd to %s, SMTP = %s" % (self.sender_email, self.sender_bcc, self.smtp_address))
+		for required_heading in self.required_settings_columns.keys() :
+			if not required_heading in settings_ws.columns:
+				all_good = False;
 			pass
-			row_num = row_num + 1	
 		pass
+		if (all_good == False):
+			raise ValueError('All required columns MUST be included in the Email Settings Worksheet!')
+		pass
+		#
+		# Now read the first row
+		#
+		self.sender_email  = "%s" % settings_ws.at[0, 'email_sender']
+		self.sender_bcc    = "%s" % settings_ws.at[0, 'email_bcc']
+		self.smtp_address  = "%s" % settings_ws.at[0, 'email_smtp_address']
+			
+		print("The Emails will be sent by %s, BCC'd to %s, SMTP = %s" % (self.sender_email, self.sender_bcc, self.smtp_address))
 		#
 		# Process the email distribution list worksheet
 		#
 		all_good = True
-		row_num = 0
-		for row in distribution_ws:
-			#
-			# The first row contains the column headings we need to find the offsets
-			#
-			if (row_num == 0):
-				col_num = 0
-				for cell in row:
-					for key in self.required_distribution_columns.keys():
-						if (cell == key):
-							self.required_distribution_columns[key] = col_num
-						pass
-					col_num = col_num + 1
-				pass
-				for key in self.required_distribution_columns.keys():
-					if (self.required_distribution_columns[key] == -1):
-						all_good = False
-					pass
-				pass
-				if (all_good == False):
-					raise ValueError('All required columns MUST be included in the Email Distribution Worksheet!')
-				pass
-			#
-			# All subsequent rows contain the recipient data
-			#
-			else:
-				r_id       = "%s" % row[self.required_distribution_columns['id']]
-				if (r_id.startswith('#')):
-					print("Skipping comment: %s" % (row))
-				else:
-					r_region   =    int(row[self.required_distribution_columns['region']])
-					r_division =    int(row[self.required_distribution_columns['division']])
-					r_lname    = "%s" % row[self.required_distribution_columns['lname']]
-					r_fname    = "%s" % row[self.required_distribution_columns['fname']]
-					r_email    = "%s" % row[self.required_distribution_columns['email_address']]
-					r_category = "%s" % row[self.required_distribution_columns['category']]
-					r_file 	   = "%s" % row[self.required_distribution_columns['file']]
-					r_notes	   = "%s" % row[self.required_distribution_columns['notes']]
-					print("\tNMRA Member %s %s (ID %s) email to %s category %s with file: %s, notes: %s" % (r_fname, r_lname, r_id, r_email, r_category, r_file, r_notes))
-					self.add_recipient(r_id, r_region, r_division, r_lname, r_category, r_fname, r_email, r_file, r_notes)
-				pass
+
+		for required_heading in self.required_distribution_columns.keys() :
+			if not required_heading in distribution_ws.columns:
+				all_good = False;
 			pass
-			row_num = row_num + 1	
+		pass
+		if (all_good == False):
+			raise ValueError('All required columns MUST be included in the Email Distribution Worksheet!')
+		pass
+
+		for row_num in distribution_ws.index:
+			r_id       = "%s" % distribution_ws.at[row_num, 'id']
+			if (r_id.startswith('#')):
+				print("Skipping comment: %s" % (row_num))
+			else:
+				r_region   =    int(distribution_ws.at[row_num, 'region'])
+				r_division =    int(distribution_ws.at[row_num, 'division'])
+				r_lname    = "%s" % distribution_ws.at[row_num, 'lname']
+				r_fname    = "%s" % distribution_ws.at[row_num, 'fname']
+				r_email    = "%s" % distribution_ws.at[row_num, 'email_address']
+				r_category = "%s" % distribution_ws.at[row_num, 'category']
+				r_file 	   = "%s" % distribution_ws.at[row_num, 'file']
+				r_notes	   = "%s" % distribution_ws.at[row_num, 'notes']
+				print("\tNMRA Member %s %s (ID %s) email to %s category %s with file: %s, notes: %s" % (r_fname, r_lname, r_id, r_email, r_category, r_file, r_notes))
+				self.add_recipient(r_id, r_region, r_division, r_lname, r_category, r_fname, r_email, r_file, r_notes)
+			pass
 		pass
 	pass
 	#
